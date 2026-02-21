@@ -13,9 +13,8 @@ export default async function SuccessPage({
     const p = await params;
     const s = await searchParams;
 
-    // MP envia query params extra aqui como collection_id, status, payment_id, etc.
-    // También enviamos nosotros el orderId.
-    const orderId = s.orderId as string | undefined;
+    // MP envía payment_id, collection_id, status, etc. en la redirección
+    const paymentId = s.payment_id || s.collection_id;
 
     return (
         <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-4">
@@ -31,9 +30,9 @@ export default async function SuccessPage({
                 </CardHeader>
                 <CardContent className="text-sm text-center space-y-4">
                     <div className="bg-zinc-50 p-4 rounded-lg border border-zinc-100">
-                        <p className="font-medium text-zinc-900 mb-1">
-                            Orden #{orderId || "Desconocida"}
-                        </p>
+                        {paymentId && (
+                            <p className="font-mono text-xs text-zinc-400 mb-2">Pago #{paymentId}</p>
+                        )}
                         <p className="text-zinc-500">
                             En breve recibirás un email con los detalles de tu pedido.
                         </p>

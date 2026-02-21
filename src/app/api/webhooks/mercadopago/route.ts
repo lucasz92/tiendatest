@@ -1,10 +1,8 @@
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { db } from "@/db";
-import { orders } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { orders, orderItems } from "@/db/schema";
 
-// Inicializamos Mercado Pago con el Access Token
 const client = new MercadoPagoConfig({
     accessToken: process.env.MP_ACCESS_TOKEN!,
 });
@@ -13,51 +11,78 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
 
-        // Webhook de Mercado Pago: buscamos eventos de pago
         const type = body.type || body.topic;
         if (type !== "payment") {
-            // Ignoramos otros eventos para evitar errores
             return NextResponse.json({ message: "Evento ignorado" }, { status: 200 });
         }
 
         const paymentId = body.data?.id;
         if (!paymentId) {
-            return NextResponse.json({ error: "ID de pago no encontrado en el payload" }, { status: 400 });
+            return NextResponse.json({ error: "ID de pago no encontrado" }, { status: 400 });
         }
 
-        // Instanciamos el servicio de Pagos de MP
         const payment = new Payment(client);
         const paymentInfo = await payment.get({ id: paymentId });
 
-        console.log(`Recibido Webhook de MP. Payment ID: ${paymentId}. Status: ${paymentInfo.status}`);
+        console.log(`[MP_WEBHOOK] Payment ${paymentId} — status: ${paymentInfo.status}`);
 
-        // La ID de la orden interna viaja en `external_reference`
-        const orderIdStr = paymentInfo.external_reference;
-        if (!orderIdStr) {
-            console.warn(`Pago ${paymentId} no tiene external_reference. Ignorando.`);
-            return NextResponse.json({ message: "Sin external_reference" }, { status: 200 });
+        // ─── Solo actuamos si el pago fue aprobado ──────────────────
+        if (paymentInfo.status !== "approved") {
+            console.log(`[MP_WEBHOOK] Pago no aprobado (${paymentInfo.status}), ignorando.`);
+            return NextResponse.json({ message: "Pago no aprobado, ignorado" }, { status: 200 });
         }
 
-        const orderId = parseInt(orderIdStr, 10);
+        // ─── Recuperamos los datos del pedido desde metadata ────────
+        const meta = paymentInfo.metadata as {
+            shop_id: number;
+            shop_slug: string;
+            total_amount: number;
+            customer_name: string;
+            customer_email: string;
+            customer_phone?: string;
+            shipping_address?: {
+                street?: string;
+                city?: string;
+                province?: string;
+                zip_code?: string;
+            };
+            items: Array<{
+                product_id: number;
+                quantity: number;
+                price_at_time: number;
+            }>;
+        } | null;
 
-        // Actualizamos el estado en base a la respuesta de MP
-        if (paymentInfo.status === "approved") {
-            await db.update(orders)
-                .set({ status: "paid" })
-                .where(eq(orders.id, orderId));
-
-            console.log(`Orden ${orderIdStr} actualizada a 'paid'`);
-        } else if (paymentInfo.status === "cancelled" || paymentInfo.status === "rejected") {
-            await db.update(orders)
-                .set({ status: "cancelled" })
-                .where(eq(orders.id, orderId));
-
-            console.log(`Orden ${orderIdStr} actualizada a 'cancelled'`);
-        } else {
-            console.log(`Orden ${orderIdStr} mantenida en estado transitorio (${paymentInfo.status})`);
+        if (!meta || !meta.shop_id || !meta.items?.length) {
+            console.error(`[MP_WEBHOOK] Metadata incompleta para pago ${paymentId}:`, meta);
+            return NextResponse.json({ error: "Metadata incompleta" }, { status: 400 });
         }
 
-        return NextResponse.json({ success: true }, { status: 200 });
+        // ─── Crear la orden en DB ───────────────────────────────────
+        const [newOrder] = await db.insert(orders).values({
+            shopId: meta.shop_id,
+            customerName: meta.customer_name,
+            customerEmail: meta.customer_email,
+            customerPhone: meta.customer_phone || null,
+            shippingAddress: meta.shipping_address || null,
+            totalAmount: meta.total_amount,
+            status: "paid", // ← ya viene confirmado por MP
+        }).returning();
+
+        // ─── Crear los order items ─────────────────────────────────
+        await db.insert(orderItems).values(
+            meta.items.map(item => ({
+                orderId: newOrder.id,
+                productId: item.product_id,
+                quantity: item.quantity,
+                priceAtTime: item.price_at_time,
+            }))
+        );
+
+        console.log(`[MP_WEBHOOK] ✅ Orden ${newOrder.id} creada correctamente para pago ${paymentId}`);
+
+        return NextResponse.json({ success: true, orderId: newOrder.id }, { status: 200 });
+
     } catch (error) {
         console.error("[MP_WEBHOOK_ERROR]", error);
         return NextResponse.json({ error: "Error procesando el webhook" }, { status: 500 });
