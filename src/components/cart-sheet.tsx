@@ -21,8 +21,9 @@ export function CartSheet() {
 
     if (!isMounted) {
         return (
-            <Button variant="outline" size="icon" className="relative group hover:bg-zinc-100">
-                <ShoppingBag className="h-5 w-5 text-zinc-700" />
+            <Button variant="outline" className="relative group hover:bg-zinc-100 gap-2">
+                <ShoppingBag className="h-4 w-4 text-zinc-700" />
+                <span className="text-sm font-medium text-zinc-700">Mi carrito</span>
             </Button>
         );
     }
@@ -41,10 +42,11 @@ export function CartSheet() {
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-                <Button variant="outline" size="icon" className="relative group hover:bg-zinc-100">
-                    <ShoppingBag className="h-5 w-5 text-zinc-700 group-hover:text-zinc-900 transition-colors" />
+                <Button variant="outline" className="relative group hover:bg-zinc-100 gap-2 pr-4">
+                    <ShoppingBag className="h-4 w-4 text-zinc-700 group-hover:text-zinc-900 transition-colors" />
+                    <span className="text-sm font-medium text-zinc-700">Mi carrito</span>
                     {itemCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                        <span className="ml-1 bg-red-500 text-white text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center flex-shrink-0">
                             {itemCount}
                         </span>
                     )}
@@ -69,12 +71,12 @@ export function CartSheet() {
                         <ul className="space-y-6">
                             {items.map((item) => (
                                 <li key={item.id} className="flex gap-4 relative">
-                                    <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-lg overflow-hidden bg-zinc-50 border border-zinc-100 flex-shrink-0">
+                                    <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-lg overflow-hidden bg-stone-100 border border-stone-200 flex-shrink-0">
                                         {item.imageUrl ? (
                                             <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
                                         ) : (
-                                            <div className="h-full w-full flex items-center justify-center">
-                                                <ShoppingBag className="h-6 w-6 text-zinc-300" />
+                                            <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
+                                                <ShoppingBag className="h-7 w-7 text-stone-300" />
                                             </div>
                                         )}
                                     </div>
