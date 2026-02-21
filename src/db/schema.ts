@@ -43,6 +43,7 @@ export const products = pgTable("products", {
     price: integer("price").notNull(),
     stock: integer("stock").default(0),
     imageUrl: text("image_url"),
+    images: jsonb("images").$type<string[]>().default([]),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

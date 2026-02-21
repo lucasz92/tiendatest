@@ -28,14 +28,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Plus, X } from "lucide-react";
+import { Plus, X, ImagePlus } from "lucide-react";
 
 const productSchema = z.object({
     name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
     price: z.number().min(1, "El precio debe ser mayor a 0."),
     stock: z.number().min(0, "El stock no puede ser negativo."),
     description: z.string().optional(),
-    imageUrl: z.string().optional(),
+    images: z.array(z.string()),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -51,16 +51,28 @@ export function AddProductModal() {
             price: 0,
             stock: 0,
             description: "",
-            imageUrl: "",
+            images: [],
         },
     });
+
+    const images = form.watch("images");
+
+    const removeImage = (index: number) => {
+        const current = form.getValues("images");
+        form.setValue("images", current.filter((_, i) => i !== index), {
+            shouldDirty: true,
+        });
+    };
 
     const mutation = useMutation({
         mutationFn: async (values: ProductFormValues) => {
             const res = await fetch("/api/products", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(values),
+                body: JSON.stringify({
+                    ...values,
+                    imageUrl: values.images[0] || null,
+                }),
             });
             if (!res.ok) throw new Error("Error al crear producto");
             return res.json();
@@ -184,53 +196,69 @@ export function AddProductModal() {
                                 />
                             </div>
 
-                            {/* Imagen */}
+                            {/* Imágenes */}
                             <div className="space-y-3">
-                                <p className="font-semibold text-zinc-700 text-sm">Imagen del producto</p>
-                                {form.watch("imageUrl") ? (
-                                    <div className="relative h-48 w-full rounded-xl overflow-hidden bg-white border border-zinc-200 flex items-center justify-center shadow-sm group">
-                                        <Image
-                                            src={form.watch("imageUrl") as string}
-                                            alt="Imagen del producto"
-                                            fill
-                                            className="object-contain p-2"
-                                        />
-                                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                            <button
-                                                type="button"
-                                                onClick={() => form.setValue("imageUrl", "")}
-                                                className="bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-transform hover:scale-110 shadow-lg flex items-center gap-2 font-medium text-sm"
-                                            >
-                                                <X className="h-4 w-4" /> Eliminar foto
-                                            </button>
-                                        </div>
+                                <div className="flex items-center justify-between">
+                                    <p className="font-semibold text-zinc-700 text-sm">
+                                        Imágenes del producto
+                                        <span className="text-zinc-400 font-normal ml-1">({images.length}/5)</span>
+                                    </p>
+                                    {images.length > 0 && (
+                                        <span className="text-xs text-zinc-400">La primera es la imagen principal</span>
+                                    )}
+                                </div>
+
+                                {/* Grid de imágenes subidas */}
+                                {images.length > 0 && (
+                                    <div className="grid grid-cols-3 gap-2">
+                                        {images.map((url, index) => (
+                                            <div key={index} className="relative aspect-square rounded-xl overflow-hidden bg-zinc-100 border border-zinc-200 group shadow-sm">
+                                                <Image src={url} alt={`Imagen ${index + 1}`} fill className="object-cover" />
+                                                {index === 0 && (
+                                                    <div className="absolute top-1 left-1 bg-blue-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
+                                                        PRINCIPAL
+                                                    </div>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeImage(index)}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
-                                ) : (
+                                )}
+
+                                {/* Upload zone — solo si hay menos de 5 imágenes */}
+                                {images.length < 5 && (
                                     <div className="border-2 border-dashed rounded-xl p-1 bg-white border-zinc-200 hover:border-[#009EE3]/50 transition-colors">
                                         <UploadDropzone
                                             endpoint="productImage"
                                             onClientUploadComplete={(res) => {
-                                                if (res && res[0]) {
-                                                    const url = res[0].url;
-                                                    console.log("[UploadThing] URL recibida:", url, "| Full res:", res[0]);
-                                                    form.setValue("imageUrl", url, {
+                                                if (res && res.length > 0) {
+                                                    const newUrls = res.map(f => f.url);
+                                                    const current = form.getValues("images");
+                                                    const updated = [...current, ...newUrls].slice(0, 5);
+                                                    form.setValue("images", updated, {
                                                         shouldValidate: true,
                                                         shouldDirty: true,
                                                         shouldTouch: true,
                                                     });
-                                                    toast.success("Imagen subida con éxito");
+                                                    toast.success(`${res.length} imagen${res.length > 1 ? "es" : ""} subida${res.length > 1 ? "s" : ""} con éxito`);
                                                 }
                                             }}
                                             onUploadError={(error: Error) => {
                                                 toast.error(`Error al subir: ${error.message}`);
                                             }}
                                             content={{
-                                                label: "Subir imagen",
-                                                allowedContent: "Permitido: JPG, PNG, WEBP max 4MB"
+                                                label: images.length === 0 ? "Subir imágenes" : <><ImagePlus className="h-4 w-4 inline mr-1" />Agregar más</>,
+                                                allowedContent: `Permitido: JPG, PNG, WEBP max 4MB (${5 - images.length} restante${5 - images.length !== 1 ? "s" : ""})`
                                             }}
                                             appearance={{
                                                 button: "bg-zinc-900 text-white hover:bg-zinc-800 h-10 px-5 text-sm mt-4 font-semibold rounded-lg shadow-sm transition-all",
-                                                container: "border-none p-6 min-h-[140px] flex flex-col justify-center",
+                                                container: "border-none p-4 min-h-[100px] flex flex-col justify-center",
                                                 label: "text-sm font-medium text-[#009EE3] hover:text-[#008EE3] cursor-pointer",
                                                 allowedContent: "text-xs mt-2 text-zinc-500 font-medium",
                                             }}

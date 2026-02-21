@@ -52,7 +52,11 @@ export async function PUT(
         }
 
         const body = await request.json();
-        const { name, price, stock, imageUrl, description } = body;
+        const { name, price, stock, imageUrl, images, description } = body;
+
+        // images[] is the source of truth; imageUrl = first image for backward compat
+        const imagesList: string[] = Array.isArray(images) ? images : (imageUrl ? [imageUrl] : []);
+        const mainImageUrl = imagesList[0] || imageUrl || null;
 
         const updatedProduct = await db
             .update(products)
@@ -61,7 +65,8 @@ export async function PUT(
                 description: description || null,
                 price,
                 stock,
-                imageUrl,
+                imageUrl: mainImageUrl,
+                images: imagesList,
             })
             .where(
                 and(eq(products.id, productId), eq(products.shopId, shop.id))

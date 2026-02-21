@@ -31,11 +31,15 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { name, price, stock, imageUrl, description } = body;
+        const { name, price, stock, imageUrl, images, description } = body;
 
         if (!name || isNaN(price)) {
             return new NextResponse("Missing fields", { status: 400 });
         }
+
+        // images[] is the source of truth; imageUrl = first image for backward compat
+        const imagesList: string[] = Array.isArray(images) ? images : (imageUrl ? [imageUrl] : []);
+        const mainImageUrl = imagesList[0] || imageUrl || null;
 
         const newProduct = await db
             .insert(products)
@@ -45,7 +49,8 @@ export async function POST(request: Request) {
                 description: description || null,
                 price,
                 stock: stock || 0,
-                imageUrl,
+                imageUrl: mainImageUrl,
+                images: imagesList,
             })
             .returning();
 
