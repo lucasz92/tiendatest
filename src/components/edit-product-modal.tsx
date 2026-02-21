@@ -214,7 +214,13 @@ export function EditProductModal({ product, open, onOpenChange }: EditProductMod
                                             endpoint="productImage"
                                             onClientUploadComplete={(res) => {
                                                 if (res && res[0]) {
-                                                    form.setValue("imageUrl", res[0].url);
+                                                    const url = res[0].url;
+                                                    console.log("[UploadThing] URL recibida:", url, "| Full res:", res[0]);
+                                                    form.setValue("imageUrl", url, {
+                                                        shouldValidate: true,
+                                                        shouldDirty: true,
+                                                        shouldTouch: true,
+                                                    });
                                                     toast.success("Imagen subida con éxito");
                                                 }
                                             }}
