@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Truck, Package, CheckCircle, PackageOpen } from "lucide-react";
+import { MoreHorizontal, Truck, Package, CheckCircle, PackageOpen, XCircle, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -27,6 +27,8 @@ import { Label } from "@/components/ui/label";
 export function OrderActions({ order }: { order: any }) {
     const queryClient = useQueryClient();
     const [isTrackingModalOpen, setIsTrackingModalOpen] = useState(false);
+    const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
     const [trackingCode, setTrackingCode] = useState(order.trackingCode || "");
 
     const updateOrderMutation = useMutation({
@@ -42,6 +44,8 @@ export function OrderActions({ order }: { order: any }) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["orders"] });
             setIsTrackingModalOpen(false);
+            setIsCancelModalOpen(false);
+            setIsReturnModalOpen(false);
         },
     });
 
@@ -80,6 +84,24 @@ export function OrderActions({ order }: { order: any }) {
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Marcar Entregado
                     </DropdownMenuItem>
+
+                    <DropdownMenuSeparator />
+
+                    <DropdownMenuItem
+                        onClick={() => setIsCancelModalOpen(true)}
+                        className="text-red-600 focus:text-red-600 focus:bg-red-50"
+                    >
+                        <XCircle className="mr-2 h-4 w-4" />
+                        Cancelar pedido
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem
+                        onClick={() => setIsReturnModalOpen(true)}
+                        className="text-orange-600 focus:text-orange-600 focus:bg-orange-50"
+                    >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Marcar como Devuelto
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
 
@@ -114,6 +136,52 @@ export function OrderActions({ order }: { order: any }) {
                             disabled={updateOrderMutation.isPending || !trackingCode.trim()}
                         >
                             {updateOrderMutation.isPending ? "Guardando..." : "Guardar y Despachar"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Cancel Order Dialog */}
+            <Dialog open={isCancelModalOpen} onOpenChange={setIsCancelModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Cancelar Pedido #{order.id}</DialogTitle>
+                        <DialogDescription>
+                            ¿Estás seguro de cancelar este pedido?<br /><br />
+                            <strong className="text-gray-900 font-medium">✨ Al cancelar este pedido, se restaurará automáticamente el stock de los {order.items?.length || 0} producto(s) incluidos.</strong>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsCancelModalOpen(false)}>Mantener</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={() => handleStatusChange("canceled")}
+                            disabled={updateOrderMutation.isPending}
+                        >
+                            {updateOrderMutation.isPending ? "Cancelando..." : "Sí, Cancelar pedido"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Return Order Dialog */}
+            <Dialog open={isReturnModalOpen} onOpenChange={setIsReturnModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Devolver Pedido #{order.id}</DialogTitle>
+                        <DialogDescription>
+                            ¿Confirmás que el cliente devolvió este pedido?<br /><br />
+                            <strong className="text-gray-900 font-medium">✨ Al marcar como devuelto, se restaurará automáticamente el stock de los {order.items?.length || 0} producto(s) incluidos.</strong>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsReturnModalOpen(false)}>Cancelar</Button>
+                        <Button
+                            className="bg-orange-600 hover:bg-orange-700 text-white"
+                            onClick={() => handleStatusChange("returned")}
+                            disabled={updateOrderMutation.isPending}
+                        >
+                            {updateOrderMutation.isPending ? "Marcando..." : "Sí, Marcar Devuelto"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

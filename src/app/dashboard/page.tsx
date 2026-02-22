@@ -63,8 +63,9 @@ export default async function DashboardPage() {
     const outOfStock = allProducts.filter(p => (p.stock ?? 0) === 0).length;
 
     const paidStatuses = ["paid", "processing", "shipped", "delivered"];
-    const ordersThisMonth = allOrdersThisMonth.length;
-    const revenueThisMonth = allOrdersThisMonth
+    const validOrdersThisMonth = allOrdersThisMonth.filter(o => o.status !== "canceled" && o.status !== "returned");
+    const ordersThisMonth = validOrdersThisMonth.length;
+    const revenueThisMonth = validOrdersThisMonth
         .filter(o => paidStatuses.includes(o.status ?? ""))
         .reduce((acc, o) => acc + (o.totalAmount ?? 0), 0);
 
@@ -75,7 +76,8 @@ export default async function DashboardPage() {
         processing: { label: "En preparación", cls: "bg-blue-100 text-blue-800" },
         shipped: { label: "Despachado", cls: "bg-purple-100 text-purple-800" },
         delivered: { label: "Entregado", cls: "bg-stone-100 text-stone-700" },
-        cancelled: { label: "Cancelado", cls: "bg-red-100 text-red-700" },
+        canceled: { label: "Cancelado", cls: "bg-red-100 text-red-800" },
+        returned: { label: "Devuelto", cls: "bg-orange-100 text-orange-800" },
     };
 
     const kpis = [
