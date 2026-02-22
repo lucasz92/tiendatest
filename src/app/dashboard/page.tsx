@@ -85,7 +85,7 @@ export default async function DashboardPage() {
             value: totalProducts.toString(),
             sub: `${outOfStock > 0 ? `${outOfStock} sin stock` : "Todos con stock"}`,
             accent: outOfStock > 0 ? "text-amber-600" : "text-emerald-600",
-            iconBg: "bg-stone-100 text-stone-700",
+            iconBg: "bg-gray-100 text-gray-600",
             href: "/dashboard/inventory",
         },
         {
@@ -93,8 +93,8 @@ export default async function DashboardPage() {
             label: "Unidades en stock",
             value: totalStock.toLocaleString("es-AR"),
             sub: "Total acumulado",
-            accent: "text-stone-500",
-            iconBg: "bg-blue-50 text-blue-700",
+            accent: "text-gray-400",
+            iconBg: "bg-gray-100 text-gray-600",
             href: "/dashboard/inventory",
         },
         {
@@ -102,8 +102,8 @@ export default async function DashboardPage() {
             label: "Valor del inventario",
             value: formatMoney(stockValue),
             sub: "Precio × unidades",
-            accent: "text-stone-500",
-            iconBg: "bg-amber-50 text-amber-700",
+            accent: "text-gray-400",
+            iconBg: "bg-gray-100 text-gray-600",
             href: "/dashboard/inventory",
         },
         {
@@ -111,8 +111,8 @@ export default async function DashboardPage() {
             label: "Pedidos este mes",
             value: ordersThisMonth.toString(),
             sub: new Date().toLocaleString("es-AR", { month: "long", year: "numeric" }),
-            accent: "text-stone-500",
-            iconBg: "bg-violet-50 text-violet-700",
+            accent: "text-gray-400",
+            iconBg: "bg-gray-100 text-gray-600",
             href: "/dashboard/orders",
         },
         {
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
             value: formatMoney(revenueThisMonth),
             sub: "Pedidos pagados/enviados",
             accent: "text-emerald-600",
-            iconBg: "bg-emerald-50 text-emerald-700",
+            iconBg: "bg-gray-100 text-gray-600",
             href: "/dashboard/orders",
         },
         {
@@ -130,7 +130,7 @@ export default async function DashboardPage() {
             value: outOfStock.toString(),
             sub: outOfStock > 0 ? "Revisá tu inventario" : "Todo en orden ✓",
             accent: outOfStock > 0 ? "text-amber-600" : "text-emerald-600",
-            iconBg: outOfStock > 0 ? "bg-amber-50 text-amber-700" : "bg-emerald-50 text-emerald-700",
+            iconBg: outOfStock > 0 ? "bg-amber-50 text-amber-600" : "bg-gray-100 text-gray-500",
             href: "/dashboard/inventory",
         },
     ];
@@ -159,15 +159,15 @@ export default async function DashboardPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
                 {kpis.map(({ icon: Icon, label, value, sub, accent, iconBg, href }) => (
                     <Link key={label} href={href}
-                        className="group bg-white border border-stone-100 rounded-2xl p-5 shadow-sm hover:shadow-md hover:border-stone-200 transition-all duration-200">
+                        className="group bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md hover:border-gray-300 transition-all duration-200">
                         <div className="flex items-start justify-between mb-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg}`}>
-                                <Icon className="w-5 h-5" />
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${iconBg}`}>
+                                <Icon className="w-4 h-4" />
                             </div>
-                            <ArrowRight className="w-4 h-4 text-stone-300 group-hover:text-stone-500 group-hover:translate-x-0.5 transition-all" />
+                            <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-gray-500 group-hover:translate-x-0.5 transition-all" />
                         </div>
-                        <div className="text-2xl font-bold text-stone-900 mb-1 leading-none">{value}</div>
-                        <div className="text-sm font-medium text-stone-600 mb-1">{label}</div>
+                        <div className="text-2xl font-bold text-gray-900 mb-0.5 leading-none">{value}</div>
+                        <div className="text-sm text-gray-600 mb-1">{label}</div>
                         <div className={`text-xs font-medium ${accent}`}>{sub}</div>
                     </Link>
                 ))}
@@ -190,18 +190,18 @@ export default async function DashboardPage() {
 
                     {recentOrders.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-                            <ShoppingCart className="w-10 h-10 text-stone-200 mb-3" />
-                            <p className="font-medium text-stone-500">Aún no hay pedidos</p>
-                            <p className="text-sm text-stone-400 mt-1">Los nuevos pedidos aparecerán aquí</p>
+                            <ShoppingCart className="w-10 h-10 text-gray-200 mb-3" />
+                            <p className="font-medium text-gray-500">Aún no hay pedidos</p>
+                            <p className="text-sm text-gray-400 mt-1">Los nuevos pedidos aparecerán aquí</p>
                         </div>
                     ) : (
-                        <div className="divide-y divide-stone-50">
+                        <div className="divide-y divide-gray-50">
                             {recentOrders.map(order => {
                                 const s = statusStyles[order.status ?? "pending"] ?? statusStyles.pending;
                                 return (
-                                    <div key={order.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-stone-50/60 transition-colors">
+                                    <div key={order.id} className="flex items-center justify-between px-6 py-3.5 hover:bg-gray-50/60 transition-colors">
                                         <div className="flex items-center gap-3 min-w-0">
-                                            <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center text-stone-600 font-bold text-xs shrink-0">
+                                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 font-bold text-xs shrink-0">
                                                 #{order.id}
                                             </div>
                                             <div className="min-w-0">
@@ -234,8 +234,8 @@ export default async function DashboardPage() {
                                 href={href}
                                 {...(external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
                                 className={`flex items-center gap-3 w-full px-4 py-3 rounded-xl text-sm font-medium transition-all duration-150 ${primary
-                                        ? "bg-stone-900 text-white hover:bg-stone-800 shadow-sm"
-                                        : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+                                    ? "bg-stone-900 text-white hover:bg-stone-800 shadow-sm"
+                                    : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
                                     }`}
                             >
                                 <Icon className="w-4 h-4 shrink-0" />

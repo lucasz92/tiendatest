@@ -28,20 +28,16 @@ function NavLink({
 }) {
     const active = exact ? pathname === href : pathname.startsWith(href);
     const base = mobile
-        ? "flex items-center gap-3 rounded-xl px-3 py-3 font-medium transition-all"
-        : "flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium transition-all text-sm";
+        ? "flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium transition-all text-sm"
+        : "flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium transition-all text-sm";
 
     return (
-        <Link
-            href={href}
-            className={`${base} ${active
-                    ? "bg-amber-50 text-amber-900 font-semibold"
-                    : "text-stone-500 hover:bg-stone-50 hover:text-stone-900"
-                }`}
-        >
-            <Icon className={`${mobile ? "h-5 w-5" : "h-4 w-4"} shrink-0 ${active ? "text-amber-700" : ""}`} />
+        <Link href={href} className={`${base} ${active
+            ? "bg-gray-100 text-gray-900 font-semibold"
+            : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+            }`}>
+            <Icon className={`h-4 w-4 shrink-0 ${active ? "text-gray-700" : "text-gray-400"}`} />
             {label}
-            {active && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-700" />}
         </Link>
     );
 }
@@ -53,44 +49,50 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     if (!shop) redirect("/sign-in");
 
-    // Get pathname server-side from headers
     const headersList = await headers();
     const pathname = headersList.get("x-pathname") || headersList.get("x-invoke-path") || "/dashboard";
 
     const SidebarContent = ({ mobile = false }: { mobile?: boolean }) => (
         <>
-            <nav className="flex-1 overflow-auto py-5">
-                <div className="px-3 space-y-1">
-                    {navItems.map(item => (
-                        <NavLink key={item.href} {...item} pathname={pathname} mobile={mobile} />
-                    ))}
-                    {role === "admin" && (
-                        <Link
-                            href="/admin"
-                            className={`flex items-center gap-3 rounded-xl px-3 ${mobile ? "py-3" : "py-2.5"} text-sm font-medium text-blue-600 hover:bg-blue-50 mt-3 transition-all`}
-                        >
-                            <ShieldAlert className={`${mobile ? "h-5 w-5" : "h-4 w-4"} shrink-0`} />
-                            Super Admin
-                        </Link>
-                    )}
+            {/* Shop identity */}
+            <div className="px-4 py-3 mx-3 mt-3 bg-gray-50 rounded-xl border border-gray-100">
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center shrink-0">
+                        <span className="text-gray-700 font-bold text-sm">{shop.name.charAt(0).toUpperCase()}</span>
+                    </div>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{shop.name}</p>
+                        <p className="text-xs text-gray-400 truncate">Panel de control</p>
+                    </div>
                 </div>
+            </div>
+
+            {/* Nav */}
+            <nav className="flex-1 overflow-auto py-4 px-3 space-y-0.5">
+                {navItems.map(item => (
+                    <NavLink key={item.href} {...item} pathname={pathname} mobile={mobile} />
+                ))}
+                {role === "admin" && (
+                    <Link href="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-blue-600 hover:bg-blue-50 transition-all mt-2">
+                        <ShieldAlert className="h-4 w-4 shrink-0" />
+                        Super Admin
+                    </Link>
+                )}
             </nav>
-            <div className="p-3 border-t border-stone-100 space-y-3">
+
+            {/* Footer */}
+            <div className="p-3 border-t border-gray-100 space-y-2">
                 <Link
                     href={`/${shop.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center w-full gap-2 rounded-xl bg-stone-900 hover:bg-stone-800 text-white px-3 py-2.5 text-sm font-semibold transition-all shadow-sm"
+                    target="_blank" rel="noopener noreferrer"
+                    className="flex items-center justify-center w-full gap-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900 px-3 py-2 text-sm font-medium transition-all"
                 >
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-3.5 w-3.5" />
                     Ver mi Tienda
                 </Link>
-                <div className="flex items-center gap-3 px-1 py-1">
+                <div className="flex items-center gap-2.5 px-2 py-1">
                     <UserButton afterSignOutUrl="/" />
-                    <div className="flex flex-col min-w-0">
-                        <span className="text-sm font-semibold text-stone-800 truncate">{shop.name}</span>
-                        <span className="text-xs text-stone-400 truncate">Panel de control</span>
-                    </div>
+                    <span className="text-xs text-gray-400 truncate">Mi cuenta</span>
                 </div>
             </div>
         </>
@@ -98,18 +100,15 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
     return (
         <Providers>
-            <div className="min-h-screen bg-stone-50 font-sans text-stone-900">
+            <div className="min-h-screen bg-gray-50 font-sans text-gray-900">
                 <div className="flex h-screen">
 
                     {/* Desktop Sidebar */}
-                    <aside className="w-60 flex-shrink-0 border-r border-stone-200 bg-white hidden md:flex flex-col shadow-sm z-10">
-                        <div className="flex h-16 items-center border-b border-stone-100 px-5 gap-2.5">
-                            <div className="w-7 h-7 bg-amber-800 rounded-lg flex items-center justify-center shrink-0">
-                                <Store className="h-3.5 w-3.5 text-white" />
-                            </div>
-                            <span className="font-bold text-base tracking-tight text-stone-900">
+                    <aside className="w-56 flex-shrink-0 border-r border-gray-200 bg-white hidden md:flex flex-col">
+                        <div className="flex h-14 items-center border-b border-gray-100 px-4">
+                            <span className="font-bold text-sm text-gray-900 tracking-tight">
                                 TiendaFácil
-                                <span className="text-stone-400 font-normal text-xs ml-1.5">Admin</span>
+                                <span className="text-gray-400 font-normal text-xs ml-1.5">Admin</span>
                             </span>
                         </div>
                         <SidebarContent />
@@ -117,35 +116,29 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
                     {/* Main area */}
                     <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
                         {/* Mobile Header */}
-                        <header className="flex h-14 items-center justify-between border-b border-stone-200 bg-white px-4 md:hidden flex-shrink-0 z-20 shadow-sm">
+                        <header className="flex h-14 items-center justify-between border-b border-gray-200 bg-white px-4 md:hidden flex-shrink-0 shadow-sm">
                             <div className="flex items-center gap-2">
                                 <Sheet>
                                     <SheetTrigger asChild>
-                                        <Button variant="ghost" size="icon" className="text-stone-600 hover:text-stone-900 hover:bg-stone-100">
+                                        <Button variant="ghost" size="icon" className="text-gray-600 hover:text-gray-900 hover:bg-gray-100">
                                             <Menu className="h-5 w-5" />
-                                            <span className="sr-only">Menú</span>
                                         </Button>
                                     </SheetTrigger>
-                                    <SheetContent side="left" className="w-[270px] flex flex-col p-0 bg-white">
-                                        <SheetHeader className="px-5 py-4 border-b border-stone-100 text-left">
-                                            <SheetTitle className="flex items-center gap-2.5 font-bold text-base">
-                                                <div className="w-7 h-7 bg-amber-800 rounded-lg flex items-center justify-center shrink-0">
-                                                    <Store className="h-3.5 w-3.5 text-white" />
-                                                </div>
-                                                TiendaFácil <span className="text-stone-400 font-normal text-xs ml-0.5">Admin</span>
+                                    <SheetContent side="left" className="w-[260px] flex flex-col p-0 bg-white">
+                                        <SheetHeader className="px-4 py-3.5 border-b border-gray-100 text-left">
+                                            <SheetTitle className="font-bold text-sm text-gray-900">
+                                                TiendaFácil <span className="text-gray-400 font-normal text-xs ml-1">Admin</span>
                                             </SheetTitle>
                                         </SheetHeader>
                                         <SidebarContent mobile />
                                     </SheetContent>
                                 </Sheet>
-                                <span className="font-bold text-stone-900">{shop.name}</span>
+                                <span className="font-semibold text-gray-900 text-sm">{shop.name}</span>
                             </div>
                             <UserButton afterSignOutUrl="/" />
                         </header>
 
-                        {/* Page Content */}
                         <main className="flex-1 overflow-x-hidden overflow-y-auto">
                             {children}
                         </main>
