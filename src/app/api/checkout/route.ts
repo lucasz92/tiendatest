@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { shops, products } from "@/db/schema";
+import { shops, products, shopSettings } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { MercadoPagoConfig, Preference } from "mercadopago";
-
-const client = new MercadoPagoConfig({
-    accessToken: process.env.MP_ACCESS_TOKEN!,
-});
 
 export async function POST(request: Request) {
     try {
@@ -27,6 +23,17 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Tienda no encontrada" }, { status: 404 });
         }
         const shop = shopData[0];
+
+        // Fetch store MP credentials
+        const shopSettingsData = await db.select().from(shopSettings).where(eq(shopSettings.shopId, shopId));
+        const shopSetting = shopSettingsData[0];
+
+        let accessToken = process.env.MP_ACCESS_TOKEN!;
+        if (shopSetting && shopSetting.mpAccessToken) {
+            accessToken = shopSetting.mpAccessToken;
+        }
+
+        const client = new MercadoPagoConfig({ accessToken });
 
         // 2. Validar precios y stock desde la DB (seguridad)
         const productIds = items.map((item: any) => item.id);
@@ -75,6 +82,7 @@ export async function POST(request: Request) {
 
         const mpResponse = await preference.create({
             body: {
+                notification_url: `${appUrl}/api/webhooks/mercadopago?shopId=${shop.id}`,
                 items: itemsForMP,
                 payer: {
                     name: customerInfo.name,

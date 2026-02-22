@@ -1,11 +1,8 @@
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { db } from "@/db";
-import { orders, orderItems } from "@/db/schema";
-
-const client = new MercadoPagoConfig({
-    accessToken: process.env.MP_ACCESS_TOKEN!,
-});
+import { orders, orderItems, shopSettings } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function POST(request: Request) {
     try {
@@ -16,11 +13,26 @@ export async function POST(request: Request) {
             return NextResponse.json({ message: "Evento ignorado" }, { status: 200 });
         }
 
+        const { searchParams } = new URL(request.url);
+        const shopIdParam = searchParams.get("shopId");
+        if (!shopIdParam) {
+            return NextResponse.json({ error: "Missing shopId param in webhook" }, { status: 400 });
+        }
+
         const paymentId = body.data?.id;
         if (!paymentId) {
             return NextResponse.json({ error: "ID de pago no encontrado" }, { status: 400 });
         }
 
+        const shopSettingsData = await db.select().from(shopSettings).where(eq(shopSettings.shopId, parseInt(shopIdParam)));
+        const shopSetting = shopSettingsData[0];
+
+        let accessToken = process.env.MP_ACCESS_TOKEN!;
+        if (shopSetting && shopSetting.mpAccessToken) {
+            accessToken = shopSetting.mpAccessToken;
+        }
+
+        const client = new MercadoPagoConfig({ accessToken });
         const payment = new Payment(client);
         const paymentInfo = await payment.get({ id: paymentId });
 

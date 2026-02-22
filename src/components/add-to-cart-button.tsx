@@ -9,10 +9,12 @@ export function AddToCartButton({
     product,
     shopId,
     disabled,
+    selectedVariants,
 }: {
     product: { id: number; name: string; price: number; imageUrl: string | null };
     shopId: number;
     disabled?: boolean;
+    selectedVariants?: Record<string, string>;
 }) {
     const addItem = useCartStore((state) => state.addItem);
 
@@ -23,6 +25,7 @@ export function AddToCartButton({
             price: product.price,
             imageUrl: product.imageUrl,
             shopId,
+            selectedVariants,
         });
         toast.success(`${product.name} agregado al carrito`);
     };

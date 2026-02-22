@@ -7,7 +7,7 @@ import { CartSheet } from "@/components/cart-sheet";
 import { ProductGrid } from "@/components/product-grid";
 
 import { db } from "@/db";
-import { shops, products } from "@/db/schema";
+import { shops, products, shopSettings } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export default async function TenantStorefront({
@@ -18,13 +18,35 @@ export default async function TenantStorefront({
   const { shopSlug } = await params;
 
   // 1. Buscamos la tienda por su Slug
-  const shopData = await db.select().from(shops).where(eq(shops.slug, shopSlug));
+  const shopData = await db
+    .select({
+      id: shops.id,
+      name: shops.name,
+      slug: shops.slug,
+      isActive: shopSettings.isActive,
+      heroImage: shopSettings.heroImage,
+    })
+    .from(shops)
+    .leftJoin(shopSettings, eq(shops.id, shopSettings.shopId))
+    .where(eq(shops.slug, shopSlug));
 
   if (shopData.length === 0) {
     notFound(); // Devuelve 404 si la tienda no existe
   }
 
   const shop = shopData[0];
+
+  if (shop.isActive === false) {
+    return (
+      <div className="min-h-screen bg-[#FDFBF7] flex flex-col items-center justify-center p-4 text-center space-y-4">
+        <h1 className="text-3xl font-serif font-bold text-stone-900">Tienda Suspendida</h1>
+        <p className="text-stone-600 max-w-md">Esta tienda se encuentra temporalmente inactiva. Vuelve más tarde o contacta al administrador.</p>
+        <Link href="/">
+          <Button variant="outline" className="mt-4 border-stone-300 text-stone-700 hover:bg-stone-100">Volver al Inicio</Button>
+        </Link>
+      </div>
+    );
+  }
 
   // 2. Buscamos los productos asociados a esta tienda
   const shopProducts = await db
@@ -67,7 +89,14 @@ export default async function TenantStorefront({
 
       {/* Hero Elegante */}
       <section className="relative w-full overflow-hidden bg-stone-100">
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-[#FDFBF7] opacity-90 z-0"></div>
+        {shop.heroImage ? (
+          <div
+            className="absolute inset-0 z-0 bg-cover bg-center opacity-40 mix-blend-multiply"
+            style={{ backgroundImage: `url(${shop.heroImage})` }}
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-[#FDFBF7] opacity-90 z-0"></div>
+        )}
         {/* Decoración sutil de fondo para similar hilos/tejidos */}
         <div className="absolute inset-0 opacity-[0.03] z-0" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)', backgroundPosition: '0 0, 10px 10px', backgroundSize: '20px 20px' }}></div>
 

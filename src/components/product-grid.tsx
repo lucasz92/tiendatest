@@ -16,6 +16,7 @@ interface Product {
     description?: string | null;
     imageUrl?: string | null;
     images?: string[] | null;
+    variants?: { name: string; options: string[] }[] | null;
 }
 
 function getImages(product: Product): string[] {
@@ -71,7 +72,7 @@ function Lightbox({ images, initialIndex, productName, onClose }: LightboxProps)
                     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
                         {images.map((url, i) => (
                             <button key={i} onClick={e => { e.stopPropagation(); setCurrent(i); }} className={`relative w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${i === current ? "border-white scale-110" : "border-white/30 hover:border-white/60"}`}>
-                                <Image src={url} alt="" fill className="object-cover" />
+                                <Image src={url} alt="" fill className="object-cover" sizes="48px" />
                             </button>
                         ))}
                     </div>
@@ -91,8 +92,21 @@ interface ProductDetailModalProps {
 function ProductDetailModal({ product, shopId, onClose }: ProductDetailModalProps) {
     const [activeIdx, setActiveIdx] = useState(0);
     const [lightboxOpen, setLightboxOpen] = useState(false);
+    const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
 
-    useEffect(() => { setActiveIdx(0); }, [product?.id]);
+    useEffect(() => {
+        setActiveIdx(0);
+        // Pre-select first option of each variant when product changes
+        if (product?.variants) {
+            const initial: Record<string, string> = {};
+            product.variants.forEach(v => {
+                if (v.options.length > 0) initial[v.name] = v.options[0];
+            });
+            setSelectedVariants(initial);
+        } else {
+            setSelectedVariants({});
+        }
+    }, [product?.id, product?.variants]);
 
     if (!product) return null;
 
@@ -107,20 +121,21 @@ function ProductDetailModal({ product, shopId, onClose }: ProductDetailModalProp
                 <Lightbox images={allImages} initialIndex={activeIdx} productName={product.name} onClose={() => setLightboxOpen(false)} />
             )}
 
-            <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px]" />
+            {/* Backdrop */}
+            <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-8" onClick={onClose}>
+                <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-                {/* Modal container */}
+                {/* Modal */}
                 <div
-                    className="relative bg-white w-full sm:max-w-3xl max-h-[95dvh] sm:max-h-[85vh] rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col sm:flex-row animate-in slide-in-from-bottom sm:zoom-in-95 duration-300"
+                    className="relative z-10 w-full lg:w-[920px] xl:w-[1080px] max-h-[92dvh] lg:max-h-[88vh] rounded-t-[2rem] lg:rounded-[2rem] shadow-2xl overflow-hidden grid lg:grid-cols-2 animate-in slide-in-from-bottom duration-300 lg:zoom-in-95"
                     onClick={e => e.stopPropagation()}
                 >
-                    {/* ── LEFT: Image panel ────────────────────────────── */}
-                    <div className="relative w-full sm:w-[52%] flex-shrink-0 flex flex-col bg-stone-100">
+                    {/* ── LEFT: Image panel ─────────────────────────────── */}
+                    <div className="relative flex flex-col bg-stone-900 overflow-hidden">
 
-                        {/* Main image */}
+                        {/* Main image — mobile: fixed height, desktop: fill full height */}
                         <div
-                            className={`relative flex-1 min-h-[280px] sm:min-h-0 sm:aspect-auto ${allImages.length > 0 ? "cursor-zoom-in" : ""}`}
+                            className={`relative h-[60vw] max-h-[360px] lg:h-full lg:max-h-none ${allImages.length > 0 ? "cursor-zoom-in" : ""}`}
                             onClick={() => allImages.length > 0 && setLightboxOpen(true)}
                         >
                             {activeImage ? (
@@ -128,8 +143,8 @@ function ProductDetailModal({ product, shopId, onClose }: ProductDetailModalProp
                                     src={activeImage}
                                     alt={product.name}
                                     fill
-                                    className="object-cover"
-                                    sizes="(max-width: 640px) 100vw, 52vw"
+                                    className="object-cover hover:scale-105 transition-transform duration-700"
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
                                     priority
                                 />
                             ) : (
@@ -138,104 +153,149 @@ function ProductDetailModal({ product, shopId, onClose }: ProductDetailModalProp
                                     <p className="text-stone-400 text-sm">Sin imagen</p>
                                 </div>
                             )}
-
-                            {/* Zoom hint overlay */}
+                            {/* Bottom gradient overlay */}
                             {activeImage && (
-                                <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors flex items-center justify-center">
-                                    <div className="opacity-0 hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm text-stone-800 rounded-full px-4 py-2 flex items-center gap-2 text-sm font-medium shadow-lg">
-                                        <ZoomIn className="h-4 w-4" /> Ampliar
-                                    </div>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                            )}
+
+                            {/* Stock badge — sits on gradient */}
+                            {isOutOfStock && (
+                                <div className="absolute bottom-4 left-4 bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-semibold px-4 py-1.5 rounded-full tracking-wider uppercase">
+                                    Agotado
+                                </div>
+                            )}
+                            {isLowStock && (
+                                <div className="absolute bottom-16 left-4 lg:bottom-4 bg-amber-600/90 backdrop-blur-md border border-amber-400/30 text-white text-xs font-semibold px-4 py-1.5 rounded-full tracking-wider uppercase">
+                                    ¡Últimas {product.stock}!
                                 </div>
                             )}
 
-                            {/* Stock badge */}
-                            {isOutOfStock && (
-                                <div className="absolute top-4 left-4 bg-stone-900/90 text-white text-xs font-bold px-3 py-1.5 rounded-full">AGOTADO</div>
-                            )}
-                            {isLowStock && (
-                                <div className="absolute top-4 left-4 bg-amber-700/90 text-white text-xs font-bold px-3 py-1.5 rounded-full">¡ÚLTIMOS {product.stock}!</div>
+                            {/* Zoom icon */}
+                            {activeImage && (
+                                <div className="absolute top-4 right-14 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-full p-2 lg:flex hidden">
+                                    <ZoomIn className="h-4 w-4" />
+                                </div>
                             )}
 
-                            {/* Close button (mobile) */}
-                            <button onClick={onClose} className="sm:hidden absolute top-4 right-4 bg-white/80 backdrop-blur-sm text-stone-700 rounded-full p-2 shadow-md">
+                            {/* Mobile close */}
+                            <button onClick={onClose} className="lg:hidden absolute top-4 right-4 bg-black/30 backdrop-blur-sm text-white rounded-full p-2">
                                 <X className="h-4 w-4" />
                             </button>
                         </div>
 
                         {/* Thumbnail strip */}
                         {allImages.length > 1 && (
-                            <div className="flex gap-1.5 p-2.5 bg-white/80 backdrop-blur-sm border-t border-stone-100 overflow-x-auto">
+                            <div className="absolute bottom-2 left-0 right-0 flex gap-2 justify-center px-4">
                                 {allImages.map((url, i) => (
                                     <button
                                         key={i}
                                         onClick={() => setActiveIdx(i)}
-                                        className={`relative w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden transition-all ${i === activeIdx ? "ring-2 ring-amber-700 ring-offset-1" : "opacity-60 hover:opacity-100"}`}
+                                        className={`relative w-11 h-11 flex-shrink-0 rounded-xl overflow-hidden transition-all duration-200 border-2 ${i === activeIdx ? "border-white scale-110 shadow-lg" : "border-white/30 opacity-60 hover:opacity-100 hover:border-white/60"}`}
                                     >
-                                        <Image src={url} alt="" fill className="object-cover" />
+                                        <Image src={url} alt="" fill className="object-cover" sizes="44px" />
                                     </button>
                                 ))}
                             </div>
                         )}
                     </div>
 
-                    {/* ── RIGHT: Details panel ─────────────────────────── */}
-                    <div className="flex flex-col flex-1 overflow-y-auto">
-                        {/* Close (desktop) */}
-                        <button onClick={onClose} className="hidden sm:flex absolute top-4 right-4 z-10 items-center justify-center bg-stone-100 hover:bg-stone-200 text-stone-600 rounded-full p-2 transition-all">
+                    {/* ── RIGHT: Details panel ────────────────────────────── */}
+                    <div className="flex flex-col overflow-y-auto bg-[#FDFCF9]">
+                        {/* Desktop close */}
+                        <button
+                            onClick={onClose}
+                            className="hidden lg:flex absolute top-5 right-5 z-20 w-9 h-9 items-center justify-center bg-stone-900/10 hover:bg-stone-900/20 text-stone-600 rounded-full transition-all"
+                        >
                             <X className="h-4 w-4" />
                         </button>
 
-                        <div className="p-6 sm:p-8 flex flex-col h-full">
+                        <div className="flex flex-col min-h-full p-7 lg:p-10">
+                            {/* Eyebrow */}
+                            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-amber-700/70 mb-3">
+                                ✶ Exclusivo
+                            </p>
+
                             {/* Name */}
-                            <h2 className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 leading-tight mb-2 pr-8">
+                            <h2 className="font-serif text-2xl lg:text-[2rem] font-bold text-stone-900 leading-tight mb-4 pr-10">
                                 {product.name}
                             </h2>
 
                             {/* Price */}
-                            <div className="flex items-baseline gap-1 mb-6">
-                                <span className="text-3xl font-light text-stone-900 tracking-tight">
+                            <div className="inline-flex items-baseline gap-1 mb-6 self-start">
+                                <span className="text-2xl lg:text-3xl font-light text-stone-800 tracking-tight">
                                     {formatMoney(product.price)}
                                 </span>
                             </div>
 
-                            {/* Divider */}
-                            <div className="h-px bg-stone-100 mb-5" />
-
-                            {/* Description */}
+                            {/* Ornamental divider */}
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="h-px flex-1 bg-stone-200" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-amber-700/50" />
+                                <div className="h-px flex-1 bg-stone-200" />
+                            </div>
                             {product.description ? (
-                                <div className="mb-5">
-                                    <p className="text-xs font-semibold text-stone-400 uppercase tracking-widest mb-2">Descripción</p>
-                                    <p className="text-stone-600 text-sm leading-relaxed whitespace-pre-line">
+                                <div className="mb-6">
+                                    <p className="text-stone-500 text-sm leading-relaxed whitespace-pre-line">
                                         {product.description}
                                     </p>
                                 </div>
                             ) : null}
 
-                            {/* Stock */}
+                            {/* Stock indicator */}
                             {!isOutOfStock && (
-                                <div className="flex items-center gap-2 text-xs text-stone-400 mb-5">
-                                    <Package className="h-3.5 w-3.5" />
-                                    <span>
-                                        {isLowStock ? `Solo quedan ${product.stock} unidades` : `${product.stock} disponibles`}
-                                    </span>
+                                <div className={`inline-flex items-center gap-2 text-xs mb-6 self-start px-3 py-1.5 rounded-full ${isLowStock ? "bg-amber-50 text-amber-700 border border-amber-200" : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    }`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${isLowStock ? "bg-amber-500" : "bg-emerald-500"}`} />
+                                    {isLowStock ? `Solo quedan ${product.stock} unidades` : `${product.stock} disponibles`}
+                                </div>
+                            )}
+
+                            {/* Variants */}
+                            {product.variants && product.variants.length > 0 && (
+                                <div className="mb-6 space-y-5">
+                                    {product.variants.map((variant) => (
+                                        <div key={variant.name}>
+                                            <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-stone-400 mb-2.5">{variant.name}</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {variant.options.map((option) => {
+                                                    const isSelected = selectedVariants[variant.name] === option;
+                                                    return (
+                                                        <button
+                                                            key={option}
+                                                            onClick={() => setSelectedVariants(prev => ({ ...prev, [variant.name]: option }))}
+                                                            className={`px-4 py-2 text-sm font-medium rounded-xl border transition-all duration-150 ${isSelected
+                                                                ? "border-stone-900 bg-stone-900 text-white shadow-md"
+                                                                : "border-stone-200 bg-white text-stone-700 hover:border-stone-400 hover:shadow-sm"
+                                                                }`}
+                                                        >
+                                                            {option}
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             )}
 
                             <div className="flex-1" />
 
-                            {/* Add to cart */}
-                            <div className="pt-4 border-t border-stone-100 space-y-3">
-                                <div className="[&>button]:w-full [&>button]:h-12 [&>button]:rounded-xl [&>button]:bg-stone-900 [&>button:not(:disabled):hover]:bg-amber-800 [&>button]:transition-colors [&>button]:font-semibold [&>button]:text-sm [&>button]:tracking-wide [&>button]:shadow-md">
-                                    <AddToCartButton
-                                        product={{ id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl ?? null }}
-                                        shopId={shopId}
-                                        disabled={isOutOfStock}
-                                    />
-                                </div>
+                            {/* CTA */}
+                            <div className="mt-6 space-y-3">
+                                <AddToCartButton
+                                    product={{
+                                        id: product.id,
+                                        name: product.name,
+                                        price: product.price,
+                                        imageUrl: product.imageUrl ?? null
+                                    }}
+                                    shopId={shopId}
+                                    disabled={isOutOfStock}
+                                    selectedVariants={selectedVariants}
+                                />
                                 {allImages.length > 1 && (
-                                    <p className="text-center text-xs text-stone-400">
-                                        <ZoomIn className="h-3 w-3 inline mr-1" />
-                                        Hacé clic en la imagen para ampliarla
+                                    <p className="text-center text-[11px] text-stone-400 tracking-wide">
+                                        Clic en la imagen para ver en detalle
                                     </p>
                                 )}
                             </div>
@@ -259,7 +319,7 @@ export function ProductGrid({ products, shopId }: ProductGridProps) {
     return (
         <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {products.map((product) => {
+                {products.map((product, index) => {
                     const images = getImages(product);
                     const mainImage = images[0] ?? null;
 
@@ -271,7 +331,7 @@ export function ProductGrid({ products, shopId }: ProductGridProps) {
                         >
                             <div className="aspect-[4/5] relative bg-stone-100 rounded-2xl overflow-hidden mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">
                                 {mainImage ? (
-                                    <Image src={mainImage} alt={product.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" />
+                                    <Image src={mainImage} alt={product.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" priority={index < 4} />
                                 ) : (
                                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
                                         <ShoppingBag className="h-16 w-16 text-stone-300 opacity-50" />

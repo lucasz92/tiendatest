@@ -1,9 +1,10 @@
 import { Providers } from "@/lib/react-query";
 import { Toaster } from "@/components/ui/sonner";
 
+import { auth } from "@clerk/nextjs/server";
 import { UserButton } from "@clerk/nextjs";
 import { getCurrentShop } from "@/lib/auth";
-import { Store, ShoppingCart, Settings, ExternalLink, Menu } from "lucide-react";
+import { Store, ShoppingCart, Settings, ExternalLink, Menu, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
@@ -15,6 +16,8 @@ export default async function DashboardLayout({
     children: React.ReactNode;
 }) {
     const shop = await getCurrentShop();
+    const { sessionClaims } = await auth();
+    const role = (sessionClaims?.metadata as { role?: string })?.role;
 
     if (!shop) {
         redirect("/sign-in");
@@ -43,6 +46,12 @@ export default async function DashboardLayout({
                                     <Settings className="h-4 w-4" />
                                     Configuración
                                 </Link>
+                                {role === "admin" && (
+                                    <Link href="/admin" className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-blue-600 font-medium transition-all hover:bg-blue-50 mt-4 border border-transparent hover:border-blue-100">
+                                        <ShieldAlert className="h-4 w-4" />
+                                        Super Admin
+                                    </Link>
+                                )}
                             </div>
                         </nav>
                         <div className="mt-auto p-4 border-t border-zinc-100 space-y-4 bg-zinc-50/50">
@@ -87,6 +96,12 @@ export default async function DashboardLayout({
                                                 <Settings className="h-5 w-5" />
                                                 Configuración
                                             </Link>
+                                            {role === "admin" && (
+                                                <Link href="/admin" className="flex items-center gap-3 rounded-lg px-3 py-3 text-blue-600 font-medium transition-all hover:bg-blue-50 mt-4 border border-transparent hover:border-blue-100">
+                                                    <ShieldAlert className="h-5 w-5" />
+                                                    Super Admin
+                                                </Link>
+                                            )}
                                         </div>
                                     </nav>
                                     <div className="mt-auto p-5 border-t border-zinc-100 space-y-5 bg-zinc-50/50">

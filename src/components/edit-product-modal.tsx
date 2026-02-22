@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { UploadDropzone } from "@/lib/uploadthing";
 import Image from "next/image";
-import { X, ImagePlus } from "lucide-react";
+import { Plus, X, ImagePlus } from "lucide-react";
 
 import {
     Dialog,
@@ -35,6 +35,10 @@ const productSchema = z.object({
     stock: z.number().min(0, "El stock no puede ser negativo."),
     description: z.string().optional().nullable(),
     images: z.array(z.string()),
+    variants: z.array(z.object({
+        name: z.string().min(1, "El nombre de la variante es requerido"),
+        options: z.string().min(1, "Debe agregar al menos una opción")
+    })).optional(),
 });
 
 type ProductFormValues = z.infer<typeof productSchema>;
@@ -48,6 +52,7 @@ interface EditProductModalProps {
         description?: string | null;
         imageUrl?: string | null;
         images?: string[] | null;
+        variants?: { name: string; options: string[] }[] | null;
     };
     open: boolean;
     onOpenChange: (open: boolean) => void;
@@ -71,7 +76,16 @@ export function EditProductModal({ product, open, onOpenChange }: EditProductMod
             stock: product.stock,
             description: product.description || "",
             images: initialImages(),
+            variants: product.variants?.map(v => ({
+                name: v.name,
+                options: v.options.join(', ')
+            })) || [],
         },
+    });
+
+    const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({
+        control: form.control,
+        name: "variants",
     });
 
     // Reset form when product changes
@@ -82,6 +96,10 @@ export function EditProductModal({ product, open, onOpenChange }: EditProductMod
             stock: product.stock,
             description: product.description || "",
             images: initialImages(),
+            variants: product.variants?.map(v => ({
+                name: v.name,
+                options: v.options.join(', ')
+            })) || [],
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [product.id]);
@@ -103,6 +121,11 @@ export function EditProductModal({ product, open, onOpenChange }: EditProductMod
                 body: JSON.stringify({
                     ...values,
                     imageUrl: values.images[0] || null,
+                    // Convert comma-separated options back to array before sending
+                    variants: values.variants?.map(v => ({
+                        name: v.name,
+                        options: v.options.split(',').map(o => o.trim()).filter(Boolean)
+                    })) || [],
                 }),
             });
             if (!res.ok) throw new Error("Error al actualizar producto");
@@ -221,8 +244,69 @@ export function EditProductModal({ product, open, onOpenChange }: EditProductMod
                                 />
                             </div>
 
+                            {/* Variantes (Talles, Colores, etc) */}
+                            <div className="space-y-4 pt-4 border-t border-zinc-100">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <h4 className="font-semibold text-zinc-700 text-sm">Variantes <span className="text-zinc-400 font-normal">(Opcional)</span></h4>
+                                        <p className="text-xs text-zinc-500 mt-0.5">Ej: Talles, Colores. Separá las opciones usando comas.</p>
+                                    </div>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-8 text-xs font-semibold"
+                                        onClick={() => appendVariant({ name: "", options: "" })}
+                                    >
+                                        <Plus className="h-3 w-3 mr-1" /> Añadir Variante
+                                    </Button>
+                                </div>
+
+                                {variantFields.length > 0 && (
+                                    <div className="space-y-3">
+                                        {variantFields.map((field, index) => (
+                                            <div key={field.id} className="flex gap-2 items-start bg-white p-3 rounded-lg border border-zinc-200 shadow-sm relative group">
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`variants.${index}.name`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex-1">
+                                                            <FormControl>
+                                                                <Input placeholder="Ej: Talle" className="h-9 text-sm focus-visible:ring-1 bg-zinc-50 border-zinc-200" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage className="text-[10px]" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <FormField
+                                                    control={form.control}
+                                                    name={`variants.${index}.options`}
+                                                    render={({ field }) => (
+                                                        <FormItem className="flex-[2]">
+                                                            <FormControl>
+                                                                <Input placeholder="Ej: S, M, L, XL" className="h-9 text-sm focus-visible:ring-1 bg-zinc-50 border-zinc-200" {...field} />
+                                                            </FormControl>
+                                                            <FormMessage className="text-[10px]" />
+                                                        </FormItem>
+                                                    )}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="h-9 w-9 text-zinc-400 hover:text-red-500 hover:bg-red-50 shrink-0"
+                                                    onClick={() => removeVariant(index)}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Imágenes */}
-                            <div className="space-y-3">
+                            <div className="space-y-3 pt-4 border-t border-zinc-100">
                                 <div className="flex items-center justify-between">
                                     <p className="font-semibold text-zinc-700 text-sm">
                                         Imágenes del producto

@@ -221,7 +221,7 @@ export default function CheckoutPage() {
                                 <CardContent className="p-0">
                                     <div className="max-h-[40vh] lg:max-h-[500px] overflow-y-auto p-5 sm:p-6 space-y-5">
                                         {items.map((item) => (
-                                            <div key={item.id} className="flex gap-4">
+                                            <div key={item.cartItemId} className="flex gap-4">
                                                 <div className="relative h-16 w-16 sm:h-20 sm:w-20 rounded-lg overflow-hidden bg-zinc-100 flex-shrink-0 border border-zinc-200/50">
                                                     {item.imageUrl ? (
                                                         <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
@@ -236,6 +236,15 @@ export default function CheckoutPage() {
                                                 </div>
                                                 <div className="flex-1 flex flex-col justify-center">
                                                     <h4 className="font-semibold text-sm sm:text-base text-zinc-800 line-clamp-2 leading-tight">{item.name}</h4>
+                                                    {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
+                                                        <div className="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                                                            {Object.entries(item.selectedVariants).map(([k, v]) => (
+                                                                <span key={k} className="bg-zinc-100 px-1.5 py-0.5 rounded-sm">
+                                                                    {k}: <span className="font-semibold text-zinc-700">{v}</span>
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                     <p className="text-zinc-500 text-sm mt-1 font-medium">
                                                         ${item.price.toLocaleString("es-AR")} c/u
                                                     </p>

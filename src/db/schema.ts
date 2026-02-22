@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
 import { relations } from 'drizzle-orm';
 
 // Shops (The Tenants)
@@ -11,7 +11,8 @@ export const shops = pgTable("shops", {
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-export const shopRelations = relations(shops, ({ many }) => ({
+export const shopRelations = relations(shops, ({ one, many }) => ({
+    settings: one(shopSettings),
     products: many(products),
     categories: many(categories),
     orders: many(orders),
@@ -44,6 +45,7 @@ export const products = pgTable("products", {
     stock: integer("stock").default(0),
     imageUrl: text("image_url"),
     images: jsonb("images").$type<string[]>().default([]),
+    variants: jsonb("variants").$type<{ name: string; options: string[] }[]>().default([]),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -100,3 +102,22 @@ export const orderItemRelations = relations(orderItems, ({ one }) => ({
         references: [products.id],
     }),
 }));
+
+// Shop Settings
+export const shopSettings = pgTable("shop_settings", {
+    id: serial("id").primaryKey(),
+    shopId: integer("shop_id").unique().notNull().references(() => shops.id, { onDelete: 'cascade' }),
+    mpAccessToken: text("mp_access_token"),
+    mpPublicKey: text("mp_public_key"),
+    isActive: boolean("is_active").default(true),
+    heroImage: text("hero_image"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const shopSettingsRelations = relations(shopSettings, ({ one }) => ({
+    shop: one(shops, {
+        fields: [shopSettings.shopId],
+        references: [shops.id],
+    }),
+}));
+

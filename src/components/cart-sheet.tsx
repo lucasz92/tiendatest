@@ -70,7 +70,7 @@ export function CartSheet() {
                     ) : (
                         <ul className="space-y-6">
                             {items.map((item) => (
-                                <li key={item.id} className="flex gap-4 relative">
+                                <li key={item.cartItemId} className="flex gap-4 relative">
                                     <div className="relative h-20 w-20 sm:h-24 sm:w-24 rounded-lg overflow-hidden bg-stone-100 border border-stone-200 flex-shrink-0">
                                         {item.imageUrl ? (
                                             <Image src={item.imageUrl} alt={item.name} fill className="object-cover" />
@@ -84,14 +84,23 @@ export function CartSheet() {
                                     <div className="flex-1 flex flex-col justify-between py-1">
                                         <div className="pr-6">
                                             <h4 className="font-semibold text-sm sm:text-base text-zinc-800 line-clamp-2 leading-tight">{item.name}</h4>
-                                            <p className="text-zinc-500 text-sm mt-1 font-medium">
+                                            {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
+                                                <div className="text-xs text-zinc-500 mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                                                    {Object.entries(item.selectedVariants).map(([k, v]) => (
+                                                        <span key={k} className="bg-zinc-100 px-1.5 py-0.5 rounded-sm">
+                                                            {k}: <span className="font-semibold text-zinc-700">{v}</span>
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            <p className="text-zinc-700 text-sm mt-1.5 font-semibold">
                                                 ${item.price.toLocaleString("es-AR")}
                                             </p>
                                         </div>
 
                                         <button
                                             className="absolute top-1 right-0 text-zinc-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full transition-colors"
-                                            onClick={() => removeItem(item.id)}
+                                            onClick={() => removeItem(item.cartItemId)}
                                             aria-label="Eliminar producto"
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -101,7 +110,7 @@ export function CartSheet() {
                                             <div className="flex items-center border border-zinc-200 rounded-md bg-white shadow-sm overflow-hidden h-8">
                                                 <button
                                                     className="px-3 h-full hover:bg-zinc-100 transition-colors text-zinc-600 flex items-center justify-center"
-                                                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                                                    onClick={() => updateQuantity(item.cartItemId, item.quantity - 1)}
                                                     disabled={item.quantity <= 1}
                                                 >
                                                     <Minus className="h-3 w-3" />
@@ -111,7 +120,7 @@ export function CartSheet() {
                                                 </span>
                                                 <button
                                                     className="px-3 h-full hover:bg-zinc-100 transition-colors text-zinc-600 flex items-center justify-center"
-                                                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                                    onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
                                                 >
                                                     <Plus className="h-3 w-3" />
                                                 </button>

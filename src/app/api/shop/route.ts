@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { shops } from "@/db/schema";
+import { shops, shopSettings } from "@/db/schema";
 import { eq, ne, and } from "drizzle-orm";
 import { getCurrentShop } from "@/lib/auth";
 
@@ -42,6 +42,23 @@ export async function PUT(request: Request) {
             })
             .where(eq(shops.id, shop.id))
             .returning();
+
+        // Upsert shopSettings
+        await db.insert(shopSettings)
+            .values({
+                shopId: shop.id,
+                mpAccessToken: body.mpAccessToken || null,
+                mpPublicKey: body.mpPublicKey || null,
+                heroImage: body.heroImage || null,
+            })
+            .onConflictDoUpdate({
+                target: shopSettings.shopId,
+                set: {
+                    mpAccessToken: body.mpAccessToken || null,
+                    mpPublicKey: body.mpPublicKey || null,
+                    heroImage: body.heroImage || null,
+                }
+            });
 
         return NextResponse.json(updatedShop[0]);
     } catch (error) {
