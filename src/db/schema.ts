@@ -142,3 +142,25 @@ export const shopSettingsRelations = relations(shopSettings, ({ one }) => ({
     }),
 }));
 
+// Coupons
+export const coupons = pgTable("coupons", {
+    id: serial("id").primaryKey(),
+    shopId: integer("shop_id").notNull().references(() => shops.id, { onDelete: 'cascade' }),
+    code: text("code").notNull(),
+    type: text("type").notNull(), // "percentage" or "fixed"
+    value: integer("value").notNull(), // Percentage format (10 for 10%) or Fixed format (1000 for $1000)
+    minAmount: integer("min_amount"), // Minimum cart amount to apply
+    maxUses: integer("max_uses"), // Maximum number of times this coupon can be used overall
+    usesCount: integer("uses_count").default(0).notNull(), // Current number of times used
+    expiresAt: timestamp("expires_at"), // Optional expiration date
+    isActive: boolean("is_active").default(true).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const couponsRelations = relations(coupons, ({ one }) => ({
+    shop: one(shops, {
+        fields: [coupons.shopId],
+        references: [shops.id],
+    }),
+}));
+

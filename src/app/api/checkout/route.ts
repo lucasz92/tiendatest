@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db";
-import { shops, products, shopSettings } from "@/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { shops, products, shopSettings, coupons } from "@/db/schema";
+import { eq, inArray, and } from "drizzle-orm";
 import { MercadoPagoConfig, Preference } from "mercadopago";
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { customerInfo, items, shopId } = body;
+        const { customerInfo, items, shopId, couponCode } = body;
 
         if (!items || items.length === 0 || !shopId) {
             return NextResponse.json({ error: "Carrito vacío o tienda inválida" }, { status: 400 });
@@ -70,6 +70,54 @@ export async function POST(request: Request) {
             });
         }
 
+        // 3. Validar y aplicar el cupón si existe
+        let appliedCouponId = null;
+        let discountAmount = 0;
+
+        if (couponCode) {
+            const normalizedCode = couponCode.toUpperCase().trim();
+            const [coupon] = await db
+                .select()
+                .from(coupons)
+                .where(and(
+                    eq(coupons.shopId, shopId),
+                    eq(coupons.code, normalizedCode)
+                ));
+
+            // Only apply if fully valid
+            if (
+                coupon &&
+                coupon.isActive &&
+                (!coupon.expiresAt || new Date(coupon.expiresAt) > new Date()) &&
+                (!coupon.maxUses || coupon.usesCount < coupon.maxUses) &&
+                (!coupon.minAmount || calculatedTotal >= coupon.minAmount)
+            ) {
+                appliedCouponId = coupon.id;
+
+                if (coupon.type === "percentage") {
+                    discountAmount = Math.round(calculatedTotal * (coupon.value / 100));
+                } else if (coupon.type === "fixed") {
+                    discountAmount = coupon.value;
+                    if (discountAmount > calculatedTotal) {
+                        discountAmount = calculatedTotal;
+                    }
+                }
+
+                // Append negative item for Mercado Pago
+                if (discountAmount > 0) {
+                    itemsForMP.push({
+                        id: `COUPON-${coupon.code}`,
+                        title: `Descuento: ${coupon.code}`,
+                        quantity: 1,
+                        unit_price: -discountAmount, // MP accepts negative prices for flat discounts
+                        currency_id: "ARS",
+                    });
+
+                    calculatedTotal -= discountAmount;
+                }
+            }
+        }
+
         const appUrl = process.env.NEXT_PUBLIC_APP_URL
             ? process.env.NEXT_PUBLIC_APP_URL
             : process.env.VERCEL_URL
@@ -110,6 +158,8 @@ export async function POST(request: Request) {
                         zipCode: customerInfo.zipCode || null,
                     },
                     items: itemsForWebhook,
+                    couponId: appliedCouponId,
+                    discountAmount: discountAmount
                 },
             }
         });

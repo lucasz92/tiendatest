@@ -3,16 +3,22 @@
 import { useCartStore } from "@/lib/cart-store";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag, Minus, Plus, Trash2, ShieldCheck, Lock } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Trash2, ShieldCheck, Lock, Ticket, XCircle, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export function CartSheet() {
     const router = useRouter();
-    const { items, removeItem, updateQuantity, getCartTotal, shopId } = useCartStore();
+    const { items, removeItem, updateQuantity, getCartTotal, shopId, coupon, applyCoupon, removeCoupon } = useCartStore();
     const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
+
+    // Coupon state
+    const [couponInput, setCouponInput] = useState("");
+    const [isValidatingCoupon, setIsValidatingCoupon] = useState(false);
 
     // Avoid hydration errors with persist middleware
     useEffect(() => {
@@ -33,11 +39,44 @@ export function CartSheet() {
 
     const handleCheckout = () => {
         setIsOpen(false);
-        // Asumimos que podemos recuperar el slug usando el window o pasarlo por props,
-        // pero en Next.js App Router es más fácil extraerlo de la URL actual si estamos en /[shopSlug]
-        const currentPath = window.location.pathname; // ej: /tienda-123
+        const currentPath = window.location.pathname;
         router.push(`${currentPath}/checkout`);
     };
+
+    const handleApplyCoupon = async () => {
+        if (!couponInput.trim() || !shopId) return;
+
+        setIsValidatingCoupon(true);
+        try {
+            const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
+            const res = await fetch(`/api/shop/${shopId}/validate-coupon`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: couponInput, cartTotal: subtotal })
+            });
+
+            const data = await res.json();
+
+            if (data.valid) {
+                applyCoupon({ code: data.code, discountAmount: data.discountAmount });
+                setCouponInput("");
+                toast.success(`¡Cupón ${data.code} aplicado con éxito!`);
+            } else {
+                toast.error(data.error || "Código inválido");
+            }
+        } catch (error) {
+            toast.error("Error al validar el cupón");
+        } finally {
+            setIsValidatingCoupon(false);
+        }
+    };
+
+    // If cart contents change, re-validate or remove coupon if minAmount is no longer met.
+    // simpler approach: recalculate discountAmount or clear the coupon if items change significantly
+    // For MVP we just keep the coupon applied until checkout where it is fully verified again.
+
+    // The previous cart total calculation without coupon (subtotal)
+    const subtotal = items.reduce((total, item) => total + item.price * item.quantity, 0);
 
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
@@ -134,11 +173,50 @@ export function CartSheet() {
                 </div>
 
                 <div className="border-t pt-5 mt-4">
+                    {/* Coupon Input Area */}
+                    {!coupon && items.length > 0 && (
+                        <div className="mb-4 flex gap-2">
+                            <div className="relative flex-1 text-zinc-500 flex items-center">
+                                <Ticket className="absolute left-3 w-4 h-4" />
+                                <Input
+                                    className="pl-9 h-10 font-mono text-sm uppercase placeholder:normal-case"
+                                    placeholder="Código de descuento"
+                                    value={couponInput}
+                                    onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleApplyCoupon()}
+                                />
+                            </div>
+                            <Button
+                                variant="secondary"
+                                className="h-10 px-4 font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200"
+                                onClick={handleApplyCoupon}
+                                disabled={isValidatingCoupon || !couponInput.trim()}
+                            >
+                                {isValidatingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aplicar"}
+                            </Button>
+                        </div>
+                    )}
+
                     <div className="flex flex-col gap-2 mb-4 bg-zinc-50 p-4 rounded-lg border border-zinc-100">
                         <div className="flex justify-between text-sm text-zinc-600 font-medium">
                             <span>Subtotal</span>
-                            <span>${total.toLocaleString("es-AR")}</span>
+                            <span>${subtotal.toLocaleString("es-AR")}</span>
                         </div>
+                        {coupon && (
+                            <div className="flex justify-between text-sm text-green-600 font-medium shrink-0 flex-wrap">
+                                <span className="flex items-center gap-1.5 break-all max-w-[80%]">
+                                    <Ticket className="w-4 h-4 shrink-0" />
+                                    <span>Cupón ({coupon.code})</span>
+                                    <button
+                                        onClick={removeCoupon}
+                                        className="text-zinc-400 hover:text-red-500 ml-1 shrink-0 transition-colors"
+                                    >
+                                        <XCircle className="w-3.5 h-3.5" />
+                                    </button>
+                                </span>
+                                <span className="shrink-0">-${coupon.discountAmount.toLocaleString("es-AR")}</span>
+                            </div>
+                        )}
                         <div className="flex justify-between text-sm text-zinc-600 font-medium">
                             <span>Envío</span>
                             <span className="text-zinc-400">Calculado en el checkout</span>

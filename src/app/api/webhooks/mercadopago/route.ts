@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { db } from "@/db";
-import { orders, orderItems, shopSettings, products } from "@/db/schema";
+import { orders, orderItems, shopSettings, products, coupons } from "@/db/schema";
 import { eq, sql, inArray } from "drizzle-orm";
 import { sendTelegramMessage, buildOrderMessage, buildLowStockMessage } from "@/lib/telegram";
 
@@ -64,6 +64,8 @@ export async function POST(request: Request) {
                 quantity: number;
                 price_at_time: number;
             }>;
+            coupon_id?: number | null;
+            discount_amount?: number | null;
         } | null;
 
         if (!meta || !meta.shop_id || !meta.items?.length) {
@@ -101,6 +103,14 @@ export async function POST(request: Request) {
                 .where(eq(products.id, item.product_id));
         }
         console.log(`[MP_WEBHOOK] 📦 Stock descontado para ${meta.items.length} producto(s)`);
+
+        // ─── Incrementar uso de cupón ──────────────────────────────
+        if (meta.coupon_id) {
+            await db.update(coupons)
+                .set({ usesCount: sql`${coupons.usesCount} + 1` })
+                .where(eq(coupons.id, meta.coupon_id));
+            console.log(`[MP_WEBHOOK] 🎟️ Cupón #${meta.coupon_id} uso incrementado.`);
+        }
 
         // ─── Notificaciones por Telegram ───────────────────────────
         if (shopSetting && shopSetting.telegramBotToken && shopSetting.telegramChatId) {

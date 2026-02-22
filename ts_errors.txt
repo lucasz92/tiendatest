@@ -1,0 +1,3 @@
+src/app/dashboard/coupons/page.tsx(18,24): error TS2307: Cannot find module '@/components/ui/switch' or its corresponding type declarations.
+src/app/dashboard/coupons/page.tsx(175,75): error TS7006: Parameter 'checked' implicitly has an 'any' type.
+src/components/coupon-dialog.tsx(32,79): error TS2307: Cannot find module '@/components/ui/select' or its corresponding type declarations.

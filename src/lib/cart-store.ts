@@ -12,6 +12,11 @@ export interface CartItem {
     cartItemId: string; // Unique combination of id + variants
 }
 
+export interface CouponState {
+    code: string;
+    discountAmount: number;
+}
+
 interface CartState {
     items: CartItem[];
     shopId: number | null; // Cart binds to a single shop instance
@@ -20,6 +25,11 @@ interface CartState {
     updateQuantity: (cartItemId: string, quantity: number) => void;
     clearCart: () => void;
     getCartTotal: () => number;
+
+    // Coupon state
+    coupon: CouponState | null;
+    applyCoupon: (coupon: CouponState) => void;
+    removeCoupon: () => void;
 }
 
 export const useCartStore = create<CartState>()(
@@ -27,6 +37,7 @@ export const useCartStore = create<CartState>()(
         (set, get) => ({
             items: [],
             shopId: null,
+            coupon: null,
 
             addItem: (product) => {
                 const { items, shopId } = get();
@@ -73,11 +84,19 @@ export const useCartStore = create<CartState>()(
                 }));
             },
 
-            clearCart: () => set({ items: [], shopId: null }),
+            clearCart: () => set({ items: [], shopId: null, coupon: null }),
 
             getCartTotal: () => {
-                return get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+                const subtotal = get().items.reduce((total, item) => total + item.price * item.quantity, 0);
+                const coupon = get().coupon;
+                if (coupon) {
+                    return Math.max(0, subtotal - coupon.discountAmount);
+                }
+                return subtotal;
             },
+
+            applyCoupon: (coupon) => set({ coupon }),
+            removeCoupon: () => set({ coupon: null }),
         }),
         {
             name: 'tienda-cart-storage', // Key localStorage name

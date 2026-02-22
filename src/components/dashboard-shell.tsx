@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { LayoutDashboard, Store, ShoppingCart, Settings, ExternalLink, Menu, ShieldAlert } from "lucide-react";
+import { LayoutDashboard, Store, ShoppingCart, Settings, ExternalLink, Menu, ShieldAlert, Ticket } from "lucide-react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ const navItems = [
     { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
     { href: "/dashboard/inventory", label: "Inventario", icon: Store },
     { href: "/dashboard/orders", label: "Pedidos", icon: ShoppingCart },
+    { href: "/dashboard/coupons", label: "Cupones", icon: Ticket },
     { href: "/dashboard/settings", label: "Configuración", icon: Settings },
 ];
 
@@ -54,8 +55,8 @@ export function DashboardShell({
                             key={item.href}
                             href={item.href}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-medium transition-all text-sm ${active
-                                    ? "bg-gray-100 text-gray-900 font-semibold"
-                                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
+                                ? "bg-gray-100 text-gray-900 font-semibold"
+                                : "text-gray-500 hover:bg-gray-50 hover:text-gray-800"
                                 }`}
                         >
                             <item.icon className={`h-4 w-4 shrink-0 ${active ? "text-gray-700" : "text-gray-400"}`} />

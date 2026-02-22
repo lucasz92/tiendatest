@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShoppingBag, ArrowLeft, ShieldCheck, Lock, CreditCard, Truck } from "lucide-react";
+import { ShoppingBag, ArrowLeft, ShieldCheck, Lock, CreditCard, Truck, Ticket } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ export default function CheckoutPage() {
     const params = useParams();
     const shopSlug = params.shopSlug as string;
 
-    const { items, getCartTotal, shopId } = useCartStore();
+    const { items, getCartTotal, shopId, coupon } = useCartStore();
     const [isMounted, setIsMounted] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -39,6 +39,7 @@ export default function CheckoutPage() {
     if (!isMounted) return null;
 
     const total = getCartTotal();
+    const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
     if (items.length === 0) {
         return (
@@ -78,6 +79,7 @@ export default function CheckoutPage() {
                     customerInfo: formData,
                     items,
                     shopId,
+                    couponCode: coupon?.code
                 }),
             });
 
@@ -260,8 +262,17 @@ export default function CheckoutPage() {
                                         <div className="space-y-3 mb-4">
                                             <div className="flex justify-between text-zinc-500 font-medium">
                                                 <span>Subtotal</span>
-                                                <span>${total.toLocaleString("es-AR")}</span>
+                                                <span>${subtotal.toLocaleString("es-AR")}</span>
                                             </div>
+                                            {coupon && (
+                                                <div className="flex justify-between text-green-600 font-medium text-sm">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Ticket className="w-4 h-4" />
+                                                        <span>Cupón ({coupon.code})</span>
+                                                    </span>
+                                                    <span>-${coupon.discountAmount.toLocaleString("es-AR")}</span>
+                                                </div>
+                                            )}
                                             <div className="flex justify-between text-zinc-500 font-medium">
                                                 <span>Costo de envío</span>
                                                 <span className="text-zinc-400">Calculado después</span>
