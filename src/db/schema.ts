@@ -128,6 +128,10 @@ export const shopSettings = pgTable("shop_settings", {
         youtube?: string;
         email?: string;
     }>().default({}),
+    // Telegram notifications
+    telegramBotToken: text("telegram_bot_token"),
+    telegramChatId: text("telegram_chat_id"),
+    telegramLowStockThreshold: integer("telegram_low_stock_threshold"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

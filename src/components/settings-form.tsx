@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
     Loader2, Store, ImageIcon, X, MessageCircle, BarChart2,
-    Search, Instagram, Facebook, Youtube, Twitter, AtSign, ChevronDown, ChevronUp
+    Search, Instagram, Facebook, Youtube, Twitter, AtSign, Bell, Send
 } from "lucide-react";
 import { UploadDropzone } from "@/lib/uploadthing";
 import Image from "next/image";
@@ -41,6 +41,9 @@ const formSchema = z.object({
     seoTitle: z.string().max(70).optional(),
     seoDescription: z.string().max(160).optional(),
     socialLinks: socialLinksSchema.optional(),
+    telegramBotToken: z.string().optional(),
+    telegramChatId: z.string().optional(),
+    telegramLowStockThreshold: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -66,6 +69,9 @@ type SettingsFormProps = {
             youtube?: string;
             email?: string;
         } | null;
+        telegramBotToken?: string | null;
+        telegramChatId?: string | null;
+        telegramLowStockThreshold?: string | null;
     };
 };
 
@@ -93,6 +99,7 @@ function Section({
 export function SettingsForm({ initialData }: SettingsFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
+    const [isTestingTelegram, setIsTestingTelegram] = useState(false);
     const [heroImageUrl, setHeroImageUrl] = useState<string | null>(initialData.heroImage || null);
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
@@ -115,6 +122,9 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
                 youtube: initialData.socialLinks?.youtube || "",
                 email: initialData.socialLinks?.email || "",
             },
+            telegramBotToken: initialData.telegramBotToken || "",
+            telegramChatId: initialData.telegramChatId || "",
+            telegramLowStockThreshold: initialData.telegramLowStockThreshold || "",
         },
     });
 
@@ -122,6 +132,8 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
     const waMessage = watch("whatsappMessage");
     const seoTitle = watch("seoTitle");
     const seoDesc = watch("seoDescription");
+    const tgBotToken = watch("telegramBotToken");
+    const tgChatId = watch("telegramChatId");
 
     const onSubmit = async (values: FormValues) => {
         try {
@@ -138,6 +150,27 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
             toast.error(error.message || "Ocurrió un error al guardar");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleTestTelegram = async () => {
+        if (!tgBotToken || !tgChatId) {
+            toast.error("Falta el Token o el Chat ID");
+            return;
+        }
+        try {
+            setIsTestingTelegram(true);
+            const res = await fetch("/api/telegram/test", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ botToken: tgBotToken, chatId: tgChatId }),
+            });
+            if (!res.ok) throw new Error(await res.text() || "Error al enviar prueba");
+            toast.success("¡Mensaje de prueba enviado a Telegram!");
+        } catch (error: any) {
+            toast.error(error.message || "Error al enviar mensaje");
+        } finally {
+            setIsTestingTelegram(false);
         }
     };
 
@@ -272,7 +305,7 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
                 </Section>
             </div>
 
-            {/* ── Fila 3: Meta Pixel + Mercado Pago ───────────────────── */}
+            {/* ── Fila 4: Meta Pixel + Mercado Pago ───────────────────── */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
                 {/* Meta Pixel */}
@@ -298,6 +331,53 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
                     </div>
                 </Section>
             </div>
+
+            {/* ── Fila 5: Notificaciones Telegram ─────────────────────── */}
+            <Section icon={Bell} title="Notificaciones de Telegram" description="Recibí alertas instantáneas de nuevos pedidos y bajo stock en tu celular.">
+                <div className="space-y-5">
+                    <div className="bg-blue-50/50 border border-blue-100 rounded-lg p-4 text-sm text-blue-800 space-y-2">
+                        <p className="font-semibold">¿Cómo configurarlo?</p>
+                        <ol className="list-decimal list-inside space-y-1 ml-1 text-blue-700">
+                            <li>Buscá a <a href="https://t.me/BotFather" target="_blank" rel="noreferrer" className="underline font-medium">@BotFather</a> en Telegram.</li>
+                            <li>Escribí <code className="bg-blue-100 px-1 rounded">/newbot</code>, dale un nombre y usuario, y copiá el <strong>Token</strong>.</li>
+                            <li>Buscá a tu nuevo bot en Telegram y mandale un mensaje cualquiera (ej. "Hola").</li>
+                            <li>Entrá a <a href="https://t.me/JsonDumpBot" target="_blank" rel="noreferrer" className="underline font-medium">@JsonDumpBot</a>, mandale un mensaje y copiá el número que te da (ese es tu <strong>Chat ID</strong>).</li>
+                        </ol>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="telegramBotToken">Bot Token</Label>
+                            <Input id="telegramBotToken" {...register("telegramBotToken")} placeholder="123456789:ABCdefGhI..." type="password" className="text-sm font-mono" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="telegramChatId">Chat ID</Label>
+                            <Input id="telegramChatId" {...register("telegramChatId")} placeholder="123456789" className="text-sm font-mono" />
+                        </div>
+                        <div className="space-y-1.5 sm:col-span-2 lg:col-span-1">
+                            <Label htmlFor="telegramLowStockThreshold">Avisar si el stock baja a...</Label>
+                            <div className="flex gap-2">
+                                <Input id="telegramLowStockThreshold" {...register("telegramLowStockThreshold")} placeholder="Ej. 3" type="number" className="text-sm" />
+                                <span className="flex items-center text-sm text-gray-500 whitespace-nowrap">unidades</span>
+                            </div>
+                            <p className="text-xs text-gray-400">Dejalo vacío para no recibir alertas de stock repuesto.</p>
+                        </div>
+                    </div>
+
+                    <div className="pt-2">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={handleTestTelegram}
+                            disabled={!tgBotToken || !tgChatId || isTestingTelegram}
+                            className="w-full sm:w-auto text-sm"
+                        >
+                            {isTestingTelegram ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4 text-blue-600" />}
+                            Enviar mensaje de prueba
+                        </Button>
+                    </div>
+                </div>
+            </Section>
 
             {/* Submit */}
             <div className="flex justify-end pt-2">

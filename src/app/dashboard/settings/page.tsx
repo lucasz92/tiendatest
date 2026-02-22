@@ -28,6 +28,9 @@ export default async function SettingsPage() {
         seoTitle: s.seoTitle || "",
         seoDescription: s.seoDescription || "",
         socialLinks: (s.socialLinks as any) || {},
+        telegramBotToken: s.telegramBotToken || "",
+        telegramChatId: s.telegramChatId || "",
+        telegramLowStockThreshold: s.telegramLowStockThreshold ? String(s.telegramLowStockThreshold) : "",
     };
 
     return (

@@ -43,7 +43,6 @@ export async function PUT(request: Request) {
             .where(eq(shops.id, shop.id))
             .returning();
 
-        // Upsert shopSettings
         const settingsPayload = {
             shopId: shop.id,
             mpAccessToken: body.mpAccessToken || null,
@@ -55,6 +54,9 @@ export async function PUT(request: Request) {
             seoTitle: body.seoTitle || null,
             seoDescription: body.seoDescription || null,
             socialLinks: body.socialLinks || {},
+            telegramBotToken: body.telegramBotToken || null,
+            telegramChatId: body.telegramChatId || null,
+            telegramLowStockThreshold: body.telegramLowStockThreshold ? parseInt(body.telegramLowStockThreshold) : null,
         };
 
         await db.insert(shopSettings)
@@ -71,6 +73,9 @@ export async function PUT(request: Request) {
                     seoTitle: settingsPayload.seoTitle,
                     seoDescription: settingsPayload.seoDescription,
                     socialLinks: settingsPayload.socialLinks,
+                    telegramBotToken: settingsPayload.telegramBotToken,
+                    telegramChatId: settingsPayload.telegramChatId,
+                    telegramLowStockThreshold: settingsPayload.telegramLowStockThreshold,
                 }
             });
 
