@@ -13,14 +13,21 @@ export default async function SettingsPage() {
     }
 
     const settings = await db.select().from(shopSettings).where(eq(shopSettings.shopId, shop.id));
-    const currentSettings = settings[0] || {};
+    const s = settings[0] || {};
 
     const initialData = {
         id: shop.id,
         name: shop.name,
         slug: shop.slug,
-        mpAccessToken: currentSettings.mpAccessToken || "",
-        mpPublicKey: currentSettings.mpPublicKey || "",
+        mpAccessToken: s.mpAccessToken || "",
+        mpPublicKey: s.mpPublicKey || "",
+        heroImage: s.heroImage || null,
+        whatsappNumber: s.whatsappNumber || "",
+        whatsappMessage: s.whatsappMessage || "",
+        metaPixelId: s.metaPixelId || "",
+        seoTitle: s.seoTitle || "",
+        seoDescription: s.seoDescription || "",
+        socialLinks: (s.socialLinks as any) || {},
     };
 
     return (

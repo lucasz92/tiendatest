@@ -44,19 +44,33 @@ export async function PUT(request: Request) {
             .returning();
 
         // Upsert shopSettings
+        const settingsPayload = {
+            shopId: shop.id,
+            mpAccessToken: body.mpAccessToken || null,
+            mpPublicKey: body.mpPublicKey || null,
+            heroImage: body.heroImage || null,
+            whatsappNumber: body.whatsappNumber || null,
+            whatsappMessage: body.whatsappMessage || null,
+            metaPixelId: body.metaPixelId || null,
+            seoTitle: body.seoTitle || null,
+            seoDescription: body.seoDescription || null,
+            socialLinks: body.socialLinks || {},
+        };
+
         await db.insert(shopSettings)
-            .values({
-                shopId: shop.id,
-                mpAccessToken: body.mpAccessToken || null,
-                mpPublicKey: body.mpPublicKey || null,
-                heroImage: body.heroImage || null,
-            })
+            .values(settingsPayload)
             .onConflictDoUpdate({
                 target: shopSettings.shopId,
                 set: {
-                    mpAccessToken: body.mpAccessToken || null,
-                    mpPublicKey: body.mpPublicKey || null,
-                    heroImage: body.heroImage || null,
+                    mpAccessToken: settingsPayload.mpAccessToken,
+                    mpPublicKey: settingsPayload.mpPublicKey,
+                    heroImage: settingsPayload.heroImage,
+                    whatsappNumber: settingsPayload.whatsappNumber,
+                    whatsappMessage: settingsPayload.whatsappMessage,
+                    metaPixelId: settingsPayload.metaPixelId,
+                    seoTitle: settingsPayload.seoTitle,
+                    seoDescription: settingsPayload.seoDescription,
+                    socialLinks: settingsPayload.socialLinks,
                 }
             });
 

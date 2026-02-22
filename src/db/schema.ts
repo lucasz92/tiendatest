@@ -111,6 +111,23 @@ export const shopSettings = pgTable("shop_settings", {
     mpPublicKey: text("mp_public_key"),
     isActive: boolean("is_active").default(true),
     heroImage: text("hero_image"),
+    // WhatsApp
+    whatsappNumber: text("whatsapp_number"),
+    whatsappMessage: text("whatsapp_message"),
+    // Marketing
+    metaPixelId: text("meta_pixel_id"),
+    // SEO
+    seoTitle: text("seo_title"),
+    seoDescription: text("seo_description"),
+    // Social Links — { instagram, facebook, tiktok, twitter, youtube, email }
+    socialLinks: jsonb("social_links").$type<{
+        instagram?: string;
+        facebook?: string;
+        tiktok?: string;
+        twitter?: string;
+        youtube?: string;
+        email?: string;
+    }>().default({}),
     createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
