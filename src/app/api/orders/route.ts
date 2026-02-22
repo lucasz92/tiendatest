@@ -30,6 +30,7 @@ export async function GET() {
                 quantity: orderItems.quantity,
                 priceAtTime: orderItems.priceAtTime,
                 productName: products.name,
+                variants: orderItems.variants,
             })
             .from(orderItems)
             .leftJoin(products, eq(orderItems.productId, products.id))

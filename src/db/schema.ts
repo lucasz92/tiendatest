@@ -90,6 +90,7 @@ export const orderItems = pgTable("order_items", {
     productId: integer("product_id").notNull().references(() => products.id, { onDelete: 'cascade' }),
     quantity: integer("quantity").notNull(),
     priceAtTime: integer("price_at_time").notNull(), // Price at the time of purchase
+    variants: jsonb("variants").$type<Record<string, string>>().default({}),
 });
 
 export const orderItemRelations = relations(orderItems, ({ one }) => ({

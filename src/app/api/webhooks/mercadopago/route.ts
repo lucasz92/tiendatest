@@ -63,6 +63,7 @@ export async function POST(request: Request) {
                 product_id: number;
                 quantity: number;
                 price_at_time: number;
+                selectedVariants?: Record<string, string>;
             }>;
             coupon_id?: number | null;
             discount_amount?: number | null;
@@ -91,6 +92,7 @@ export async function POST(request: Request) {
                 productId: item.product_id,
                 quantity: item.quantity,
                 priceAtTime: item.price_at_time,
+                variants: item.selectedVariants || {},
             }))
         );
 

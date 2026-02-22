@@ -233,11 +233,18 @@ export function CartSheet() {
                         onClick={handleCheckout}
                     >
                         <Lock className="h-4 w-4" />
-                        Pagar y Confirmar
+                        Confirmar Pedido
                     </Button>
-                    <div className="flex items-center justify-center gap-2 mt-4 text-xs text-zinc-500 font-medium pb-2 sm:pb-0">
-                        <ShieldCheck className="h-4 w-4 text-green-600" />
-                        Transacción 100% segura
+                    <div className="flex flex-col items-center justify-center gap-1.5 mt-4 pb-2 sm:pb-0">
+                        <div className="flex items-center gap-1.5 text-xs text-zinc-500 font-medium">
+                            <ShieldCheck className="h-4 w-4 text-green-600" />
+                            Transacción 100% segura a través de
+                        </div>
+                        <img
+                            src="https://z0958wdn14.ufs.sh/f/iAyPg2th0G1xc9LNa6Q2NMyW1njaltZusxpQ46YDUc8o7EGi"
+                            alt="Mercado Pago"
+                            className="h-5 object-contain"
+                        />
                     </div>
                 </div>
             </SheetContent>

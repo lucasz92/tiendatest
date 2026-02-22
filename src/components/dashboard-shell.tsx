@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { LayoutDashboard, Store, ShoppingCart, Settings, ExternalLink, Menu, ShieldAlert, Ticket } from "lucide-react";
+import { LayoutDashboard, Store, ShoppingCart, Settings, ExternalLink, Menu, ShieldAlert, Ticket, ListFilter } from "lucide-react";
 import Link from "next/link";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetHeader } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 const navItems = [
     { href: "/dashboard", label: "Inicio", icon: LayoutDashboard, exact: true },
     { href: "/dashboard/inventory", label: "Inventario", icon: Store },
+    { href: "/dashboard/categories", label: "Categorías", icon: ListFilter },
     { href: "/dashboard/orders", label: "Pedidos", icon: ShoppingCart },
     { href: "/dashboard/coupons", label: "Cupones", icon: Ticket },
     { href: "/dashboard/settings", label: "Configuración", icon: Settings },

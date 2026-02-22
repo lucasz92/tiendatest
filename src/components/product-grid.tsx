@@ -13,6 +13,7 @@ interface Product {
     name: string;
     price: number;
     stock: number | null;
+    categoryId?: number | null;
     description?: string | null;
     imageUrl?: string | null;
     images?: string[] | null;
@@ -311,72 +312,110 @@ function ProductDetailModal({ product, shopId, onClose }: ProductDetailModalProp
 interface ProductGridProps {
     products: Product[];
     shopId: number;
+    categories?: { id: number; name: string; slug: string }[];
 }
 
-export function ProductGrid({ products, shopId }: ProductGridProps) {
+export function ProductGrid({ products, shopId, categories = [] }: ProductGridProps) {
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+
+    const filteredProducts = selectedCategoryId
+        ? products.filter(p => p.categoryId === selectedCategoryId)
+        : products;
 
     return (
         <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                {products.map((product, index) => {
-                    const images = getImages(product);
-                    const mainImage = images[0] ?? null;
-
-                    return (
-                        <div
-                            key={product.id}
-                            className="group flex flex-col cursor-pointer"
-                            onClick={() => setSelectedProduct(product)}
+            {categories.length > 0 && (
+                <div className="flex flex-wrap items-center justify-center gap-2 mb-8 md:mb-12">
+                    <button
+                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategoryId === null
+                            ? "bg-amber-800 text-white shadow-md hover:bg-amber-900"
+                            : "bg-white text-stone-600 border border-stone-200 hover:border-stone-400 hover:text-stone-900"
+                            }`}
+                        onClick={() => setSelectedCategoryId(null)}
+                    >
+                        Todos
+                    </button>
+                    {categories.map((cat) => (
+                        <button
+                            key={cat.id}
+                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedCategoryId === cat.id
+                                ? "bg-amber-800 text-white shadow-md hover:bg-amber-900"
+                                : "bg-white text-stone-600 border border-stone-200 hover:border-stone-400 hover:text-stone-900"
+                                }`}
+                            onClick={() => setSelectedCategoryId(cat.id)}
                         >
-                            <div className="aspect-[4/5] relative bg-stone-100 rounded-2xl overflow-hidden mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">
-                                {mainImage ? (
-                                    <Image src={mainImage} alt={product.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" priority={index < 4} />
-                                ) : (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
-                                        <ShoppingBag className="h-16 w-16 text-stone-300 opacity-50" />
+                            {cat.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+
+            {filteredProducts.length === 0 ? (
+                <div className="text-center py-12">
+                    <p className="text-stone-500 font-medium">No hay productos en esta categoría.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {filteredProducts.map((product, index) => {
+                        const images = getImages(product);
+                        const mainImage = images[0] ?? null;
+
+                        return (
+                            <div
+                                key={product.id}
+                                className="group flex flex-col cursor-pointer"
+                                onClick={() => setSelectedProduct(product)}
+                            >
+                                <div className="aspect-[4/5] relative bg-stone-100 rounded-2xl overflow-hidden mb-4 shadow-sm group-hover:shadow-xl transition-all duration-500">
+                                    {mainImage ? (
+                                        <Image src={mainImage} alt={product.name} fill className="object-cover group-hover:scale-110 transition-transform duration-700 ease-in-out" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" priority={index < 4} />
+                                    ) : (
+                                        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-stone-100 to-stone-200">
+                                            <ShoppingBag className="h-16 w-16 text-stone-300 opacity-50" />
+                                        </div>
+                                    )}
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        <span className="bg-white/90 backdrop-blur-sm text-stone-800 text-xs font-semibold px-4 py-2 rounded-full shadow-lg">Ver detalles</span>
                                     </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                                    <span className="bg-white/90 backdrop-blur-sm text-stone-800 text-xs font-semibold px-4 py-2 rounded-full shadow-lg">Ver detalles</span>
+                                    {images.length > 1 && (
+                                        <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                            +{images.length - 1} fotos
+                                        </div>
+                                    )}
+                                    {(product.stock ?? 0) === 0 && (
+                                        <div className="absolute top-4 left-4 bg-stone-900/90 text-[#FDFBF7] text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md">AGOTADO</div>
+                                    )}
+                                    {(product.stock ?? 0) > 0 && (product.stock ?? 0) <= 5 && (
+                                        <div className="absolute top-4 left-4 bg-amber-700/90 text-[#FDFBF7] text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md">¡ÚLTIMOS {product.stock}!</div>
+                                    )}
                                 </div>
-                                {images.length > 1 && (
-                                    <div className="absolute bottom-3 right-3 bg-black/50 text-white text-xs font-semibold px-2 py-1 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                        +{images.length - 1} fotos
+                                <div className="flex flex-col flex-1 px-1">
+                                    <h3 className="font-serif font-semibold text-lg line-clamp-2 leading-snug text-stone-800 group-hover:text-amber-800 transition-colors mb-1">
+                                        {product.name}
+                                    </h3>
+                                    {product.description && (
+                                        <p className="text-sm text-stone-500 line-clamp-2 mb-3 font-light">{product.description}</p>
+                                    )}
+                                    <div className="mt-auto pt-2 flex items-center justify-between mb-3">
+                                        <span className="text-xl font-medium text-stone-900 tracking-tight">{formatMoney(product.price)}</span>
                                     </div>
-                                )}
-                                {(product.stock ?? 0) === 0 && (
-                                    <div className="absolute top-4 left-4 bg-stone-900/90 text-[#FDFBF7] text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md">AGOTADO</div>
-                                )}
-                                {(product.stock ?? 0) > 0 && (product.stock ?? 0) <= 5 && (
-                                    <div className="absolute top-4 left-4 bg-amber-700/90 text-[#FDFBF7] text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-md">¡ÚLTIMOS {product.stock}!</div>
-                                )}
+                                    <div onClick={e => e.stopPropagation()}>
+                                        <div className="[&>button]:w-full [&>button]:rounded-xl [&>button]:bg-stone-900 [&>button:not(:disabled):hover]:bg-amber-800 [&>button]:transition-colors [&>button]:shadow-md">
+                                            <AddToCartButton
+                                                product={{ id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl ?? null }}
+                                                shopId={shopId}
+                                                disabled={(product.stock ?? 0) === 0}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex flex-col flex-1 px-1">
-                                <h3 className="font-serif font-semibold text-lg line-clamp-2 leading-snug text-stone-800 group-hover:text-amber-800 transition-colors mb-1">
-                                    {product.name}
-                                </h3>
-                                {product.description && (
-                                    <p className="text-sm text-stone-500 line-clamp-2 mb-3 font-light">{product.description}</p>
-                                )}
-                                <div className="mt-auto pt-2 flex items-center justify-between mb-3">
-                                    <span className="text-xl font-medium text-stone-900 tracking-tight">{formatMoney(product.price)}</span>
-                                </div>
-                                <div onClick={e => e.stopPropagation()}>
-                                    <div className="[&>button]:w-full [&>button]:rounded-xl [&>button]:bg-stone-900 [&>button:not(:disabled):hover]:bg-amber-800 [&>button]:transition-colors [&>button]:shadow-md">
-                                        <AddToCartButton
-                                            product={{ id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl ?? null }}
-                                            shopId={shopId}
-                                            disabled={(product.stock ?? 0) === 0}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
 
             {selectedProduct && (
                 <ProductDetailModal product={selectedProduct} shopId={shopId} onClose={() => setSelectedProduct(null)} />

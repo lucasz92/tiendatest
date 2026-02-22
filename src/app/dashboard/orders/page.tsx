@@ -74,6 +74,29 @@ const columns = [
         },
     },
     {
+        id: "items",
+        header: "Artículos",
+        cell: ({ row }: any) => {
+            const items = row.original.items || [];
+            return (
+                <div className="flex flex-col gap-1 text-sm max-w-[250px]">
+                    {items.map((it: any, i: number) => {
+                        const hasVariants = it.variants && Object.keys(it.variants).length > 0;
+                        const variantsStr = hasVariants
+                            ? Object.entries(it.variants).map(([k, v]) => `${k}: ${v}`).join(', ')
+                            : '';
+                        return (
+                            <div key={i} className="flex flex-col border-b border-zinc-100 last:border-0 pb-1 last:pb-0">
+                                <div><span className="font-semibold">{it.quantity}x</span> <span className="text-zinc-700 font-medium">{it.productName || 'Producto Eliminado'}</span></div>
+                                {hasVariants && <div className="text-xs text-amber-600/90 font-medium bg-amber-50 self-start px-1.5 rounded">{variantsStr}</div>}
+                            </div>
+                        );
+                    })}
+                </div>
+            )
+        }
+    },
+    {
         accessorKey: "totalAmount",
         header: "Total",
         cell: ({ row }: any) => {

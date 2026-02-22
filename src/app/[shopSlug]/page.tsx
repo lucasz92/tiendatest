@@ -9,7 +9,7 @@ import { CartSheet } from "@/components/cart-sheet";
 import { ProductGrid } from "@/components/product-grid";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { db } from "@/db";
-import { shops, products, shopSettings } from "@/db/schema";
+import { shops, products, shopSettings, categories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 // ──── SVG social icons (lucide doesn't have TikTok) ────────────────────────
@@ -96,6 +96,7 @@ export default async function TenantStorefront({ params }: { params: Promise<{ s
   }
 
   const shopProducts = await db.select().from(products).where(eq(products.shopId, shop.id));
+  const shopCategories = await db.select().from(categories).where(eq(categories.shopId, shop.id));
 
   // Social links list (only those with a value)
   const socialItems = [
@@ -235,7 +236,7 @@ export default async function TenantStorefront({ params }: { params: Promise<{ s
             <p className="text-stone-500 mt-2 max-w-sm md:max-w-md text-sm md:text-base">Pronto subiremos nuestros primeros productos. ¡Volvé en unos días!</p>
           </div>
         ) : (
-          <ProductGrid products={shopProducts} shopId={shop.id} />
+          <ProductGrid products={shopProducts} shopId={shop.id} categories={shopCategories} />
         )}
       </main>
 

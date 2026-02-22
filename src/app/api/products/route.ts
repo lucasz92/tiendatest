@@ -31,7 +31,7 @@ export async function POST(request: Request) {
         }
 
         const body = await request.json();
-        const { name, price, stock, imageUrl, images, description, variants } = body;
+        const { name, price, stock, imageUrl, images, description, variants, categoryId } = body;
 
         if (!name || isNaN(price)) {
             return new NextResponse("Missing fields", { status: 400 });
@@ -45,6 +45,7 @@ export async function POST(request: Request) {
             .insert(products)
             .values({
                 shopId: shop.id,
+                categoryId: categoryId || null,
                 name,
                 description: description || null,
                 price,

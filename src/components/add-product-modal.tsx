@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { UploadDropzone } from "@/lib/uploadthing";
 import Image from "next/image";
@@ -17,6 +17,13 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import {
     Form,
     FormControl,
@@ -34,6 +41,7 @@ const productSchema = z.object({
     name: z.string().min(2, "El nombre debe tener al menos 2 caracteres."),
     price: z.number().min(1, "El precio debe ser mayor a 0."),
     stock: z.number().min(0, "El stock no puede ser negativo."),
+    categoryId: z.number().nullable().optional(),
     description: z.string().optional(),
     images: z.array(z.string()),
     variants: z.array(z.object({
@@ -54,6 +62,7 @@ export function AddProductModal() {
             name: "",
             price: 0,
             stock: 0,
+            categoryId: null,
             description: "",
             images: [],
             variants: [],
@@ -73,6 +82,15 @@ export function AddProductModal() {
             shouldDirty: true,
         });
     };
+
+    const { data: categories = [] } = useQuery<{ id: number; name: string }[]>({
+        queryKey: ["categories"],
+        queryFn: async () => {
+            const res = await fetch("/api/categories");
+            if (!res.ok) throw new Error("Failed to fetch categories");
+            return res.json();
+        },
+    });
 
     const mutation = useMutation({
         mutationFn: async (values: ProductFormValues) => {
@@ -127,24 +145,54 @@ export function AddProductModal() {
                 <div className="p-6 bg-zinc-50/50 max-h-[75vh] overflow-y-auto rounded-b-2xl">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-                            {/* Nombre */}
-                            <FormField
-                                control={form.control}
-                                name="name"
-                                render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="font-semibold text-zinc-700">Nombre del producto</FormLabel>
-                                        <FormControl>
-                                            <Input
-                                                placeholder="Ej: Pasmina de Lino"
-                                                {...field}
-                                                className="bg-white border-zinc-200 focus:border-[#009EE3] focus:ring-[#009EE3]/20 transition-all rounded-lg h-11"
-                                            />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}
-                            />
+                            {/* Nombre y Categoría */}
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <FormField
+                                    control={form.control}
+                                    name="name"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="font-semibold text-zinc-700">Nombre del producto</FormLabel>
+                                            <FormControl>
+                                                <Input
+                                                    placeholder="Ej: Pasmina de Lino"
+                                                    {...field}
+                                                    className="bg-white border-zinc-200 focus:border-[#009EE3] focus:ring-[#009EE3]/20 transition-all rounded-lg h-11"
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                                <FormField
+                                    control={form.control}
+                                    name="categoryId"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="font-semibold text-zinc-700">Categoría <span className="text-zinc-400 font-normal">(opcional)</span></FormLabel>
+                                            <Select
+                                                onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))}
+                                                value={field.value?.toString() || "none"}
+                                            >
+                                                <FormControl>
+                                                    <SelectTrigger className="bg-white border-zinc-200 focus:border-[#009EE3] focus:ring-[#009EE3]/20 transition-all rounded-lg h-11">
+                                                        <SelectValue placeholder="Seleccioná una categoría" />
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Sin categoría</SelectItem>
+                                                    {categories.map((cat) => (
+                                                        <SelectItem key={cat.id} value={cat.id.toString()}>
+                                                            {cat.name}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
 
                             {/* Descripción */}
                             <FormField

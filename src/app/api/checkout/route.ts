@@ -64,9 +64,10 @@ export async function POST(request: Request) {
             });
 
             itemsForWebhook.push({
-                productId: dbProduct.id,
+                product_id: dbProduct.id,
                 quantity: cartItem.quantity,
-                priceAtTime: dbProduct.price,
+                price_at_time: dbProduct.price,
+                selectedVariants: cartItem.selectedVariants || {},
             });
         }
 
