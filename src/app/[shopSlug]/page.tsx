@@ -135,21 +135,23 @@ export default async function TenantStorefront({ params }: { params: Promise<{ s
             </div>
           </Link>
 
-          <div className="flex items-center gap-2 md:gap-4">
-            {/* Nav links */}
-            <nav className="hidden lg:flex gap-5 mr-2 text-sm font-medium tracking-wide text-stone-600">
-              <Link href="#coleccion" className="hover:text-amber-800 transition-colors">Colección</Link>
-              <Link href="#historia" className="hover:text-amber-800 transition-colors">Historia</Link>
-              <Link href="#contacto" className="hover:text-amber-800 transition-colors">Contacto</Link>
-            </nav>
-
-            {/* Social icons in header */}
+          <div className="flex items-center gap-2 md:gap-3">
+            {/* Social pills in header */}
             {socialItems.length > 0 && (
-              <div className="hidden md:flex items-center gap-1.5 border-l border-stone-200 pl-3 ml-1">
+              <div className="flex items-center gap-2">
                 {socialItems.slice(0, 3).map(({ key, Icon, label, href }) => (
-                  <a key={key} href={href} target="_blank" rel="noopener noreferrer" aria-label={label}
-                    className="w-8 h-8 flex items-center justify-center text-stone-500 hover:text-amber-800 hover:bg-amber-50 rounded-full transition-all">
+                  <a
+                    key={key}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-white border border-stone-200 rounded-full
+                               text-stone-600 hover:text-stone-900 hover:border-stone-300 hover:shadow-sm
+                               transition-all duration-150 text-sm font-medium"
+                  >
                     <Icon />
+                    <span className="hidden lg:inline">{label}</span>
                   </a>
                 ))}
               </div>

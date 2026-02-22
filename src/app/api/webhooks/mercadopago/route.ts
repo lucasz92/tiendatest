@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { MercadoPagoConfig, Payment } from "mercadopago";
 import { db } from "@/db";
-import { orders, orderItems, shopSettings } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { orders, orderItems, shopSettings, products } from "@/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 export async function POST(request: Request) {
     try {
@@ -92,6 +92,14 @@ export async function POST(request: Request) {
         );
 
         console.log(`[MP_WEBHOOK] ✅ Orden ${newOrder.id} creada correctamente para pago ${paymentId}`);
+
+        // ─── Descontar stock automáticamente ───────────────────────
+        for (const item of meta.items) {
+            await db.update(products)
+                .set({ stock: sql`GREATEST(0, ${products.stock} - ${item.quantity})` })
+                .where(eq(products.id, item.product_id));
+        }
+        console.log(`[MP_WEBHOOK] 📦 Stock descontado para ${meta.items.length} producto(s)`);
 
         return NextResponse.json({ success: true, orderId: newOrder.id }, { status: 200 });
 
